@@ -7,8 +7,8 @@
 ###  Fluxo de Login
 | Alunos | Atribuições |
 | :--- | :--- |
-| **Cauã Dantas Barbosa** | • Tela de criação de grupos <br> • Tela do chat de grupos |
-| **João Enzo Vieira da Penha** | • Tela de "Seus Grupos" <br> • Tela de "Descobrir Grupos" |
+| **Cauã Dantas Barbosa** | • Tela de de "Seus Grupos" <br> • Tela de configurações do usuário |
+| **João Enzo Vieira da Penha** | • Tela de Login |
 
 ---
 

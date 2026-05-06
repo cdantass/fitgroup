@@ -9,6 +9,6 @@ Pedro Henrique do Nascimento Miranda,
 José Alexsandro de França Menezes
 
 (Fluxo de Chat)
-Thiago Buarque de Melo Andrade,
-Saulo Marcel Leite Carvalho,
+Thiago Buarque de Melo Andrade - Tela de criação de grupos e tela do chat de grupos.
+Saulo Marcel Leite Carvalho - Tela dos seus grupos e descobrir grupos.
 

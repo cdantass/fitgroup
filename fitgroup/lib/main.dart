@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -42,8 +43,8 @@ class _MainNavigatorState extends State<MainNavigator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _currentIndex == 0 ? const HomeScreen() : const SizedBox(),
-      bottomNavigationBar: _buildBottomNav(),
+      body: _currentIndex == 0 ? const WelcomeScreen() : const SizedBox(),
+      bottomNavigationBar: _currentIndex == 0 ? null : _buildBottomNav(),
     );
   }
 

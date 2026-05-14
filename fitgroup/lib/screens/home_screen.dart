@@ -5,6 +5,7 @@ import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
 import 'workout_detail_screen.dart';
 import '../screens/profile_screen.dart';
+import 'group_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -131,7 +132,17 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: GroupChip(group: AppData.groups[index]),
+                child: GroupChip(
+                  group: AppData.groups[index],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GroupChatScreen(group: AppData.groups[index]),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           ),

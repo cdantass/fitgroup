@@ -3,7 +3,6 @@ import '../models/app_data.dart';
 import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
-import 'workout_detail_screen.dart';
 import '../screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,20 +48,20 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 100, 
+          height: 100,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Positioned(
-                  left: -40, 
+                  left: -40,
                   child: SizedBox(
-                    width: 200, 
-                    height: 200, 
+                    width: 200,
+                    height: 200,
                     child: Image.asset(
                       'img/logo_fitgroup.png',
-                      fit: BoxFit.contain, 
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.fitness_center_rounded,
                         color: Colors.white,
@@ -166,18 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.only(bottom: 14),
               child: WorkoutCard(
                 workout: AppData.workouts[index],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WorkoutDetailScreen(
-                      workout: AppData.workouts[index],
-                    ),
-                  ),
-                ).then((_) => setState(() {})),
+
+                // Navegação removida
+                onTap: () {},
+
                 onExerciseToggle: (exerciseIndex) {
                   setState(() {
-                    AppData.workouts[index].exercises[exerciseIndex].completed =
-                        !AppData.workouts[index].exercises[exerciseIndex].completed;
+                    AppData.workouts[index]
+                        .exercises[exerciseIndex]
+                        .completed =
+                        !AppData.workouts[index]
+                            .exercises[exerciseIndex]
+                            .completed;
                   });
                 },
               ),

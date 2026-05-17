@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
 import '../screens/profile_screen.dart';
+import '../screens/workout_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -130,7 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: GroupChip(group: AppData.groups[index]),
+                child: GroupChip(
+                  group: AppData.groups[index],
+                ),
               );
             },
           ),
@@ -146,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 20, 20, 14),
           child: Text(
-            'Seus treino',
+            'Seus treinos',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -161,22 +164,30 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: AppData.workouts.length,
           itemBuilder: (context, index) {
+            final workout = AppData.workouts[index];
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: WorkoutCard(
-                workout: AppData.workouts[index],
+                workout: workout,
 
-                // Navegação removida
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutDetailScreen(
+                        workout: workout,
+                      ),
+                    ),
+                  ).then((_) {
+                    setState(() {});
+                  });
+                },
 
                 onExerciseToggle: (exerciseIndex) {
                   setState(() {
-                    AppData.workouts[index]
-                        .exercises[exerciseIndex]
-                        .completed =
-                        !AppData.workouts[index]
-                            .exercises[exerciseIndex]
-                            .completed;
+                    workout.exercises[exerciseIndex].completed =
+                        !workout.exercises[exerciseIndex].completed;
                   });
                 },
               ),

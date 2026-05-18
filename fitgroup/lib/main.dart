@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -42,20 +41,20 @@ class _MainNavigatorState extends State<MainNavigator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _currentIndex == 0 ? const HomeScreen() : const SizedBox(),
+      body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildBottomNav() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Color.fromRGBO(0, 0, 0, 0.051),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: Offset(0, -2),
           ),
         ],
       ),
@@ -70,11 +69,46 @@ class _MainNavigatorState extends State<MainNavigator> {
                 isActive: _currentIndex == 0,
                 onTap: () => setState(() => _currentIndex = 0),
               ),
+              _NavItem(
+                icon: Icons.calendar_month_rounded,
+                isActive: _currentIndex == 1,
+                onTap: () => setState(() => _currentIndex = 1),
+              ),
+              _NavItem(
+                icon: Icons.group_rounded,
+                isActive: _currentIndex == 2,
+                onTap: () => setState(() => _currentIndex = 2),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 1:
+        return const Scaffold(
+          body: Center(
+            child: Text(
+              'Calendário',
+              style: TextStyle(fontSize: 18),
+            ),
+          ),
+        );
+      case 2:
+        return const Scaffold(
+          body: Center(
+            child: Text(
+              'Grupos',
+              style: TextStyle(fontSize: 18),
+            ),
+          ),
+        );
+      default:
+        return const HomeScreen();
+    }
   }
 }
 
@@ -98,9 +132,7 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive
-              ? Colors.grey.shade200
-              : Colors.transparent,
+          color: isActive ? Colors.grey.shade200 : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Icon(

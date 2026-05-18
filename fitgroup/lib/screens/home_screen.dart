@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: AppTheme.primaryDark,
+      color: const Color.fromARGB(255, 26, 26, 46),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
+                        color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(

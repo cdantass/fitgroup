@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/app_data.dart';
+import '../models/group.dart';
 
 class GroupChip extends StatelessWidget {
-  final FitGroup group;
+  final Group group;
   final VoidCallback? onTap;
 
   const GroupChip({super.key, required this.group, this.onTap});
@@ -21,7 +21,7 @@ class GroupChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: group.color.withOpacity(0.4),
+                color: group.color.withValues(alpha: 0.4),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -35,13 +35,28 @@ class GroupChip extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    group.emoji,
-                    style: const TextStyle(fontSize: 18),
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      group.name.isNotEmpty
+                          ? group.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                   Icon(
                     Icons.more_horiz_rounded,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     size: 16,
                   ),
                 ],
@@ -52,6 +67,7 @@ class GroupChip extends StatelessWidget {
                   Text(
                     group.name,
                     maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -63,7 +79,7 @@ class GroupChip extends StatelessWidget {
                   Text(
                     '${group.members} membros',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 9,
                       fontWeight: FontWeight.w500,
                     ),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../models/app_data.dart';
+import '../models/group.dart';
 import '../theme/app_theme.dart';
 
 class GroupEditorScreen extends StatefulWidget {
-  final FitGroup group;
+  final Group group;
 
   const GroupEditorScreen({super.key, required this.group});
 

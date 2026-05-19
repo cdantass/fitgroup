@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
+import 'app_shell.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Navega para Home e limpa a pilha para evitar voltar à tela de login
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                            MaterialPageRoute(builder: (_) => const AppShell()),
                             (route) => false,
                           );
                         },

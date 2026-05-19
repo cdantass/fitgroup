@@ -48,7 +48,6 @@ class _DescobrirScreenState extends State<DescobrirScreen> {
         ],
       ),
       floatingActionButton: _buildFAB(context),
-      bottomNavigationBar: const FitgroupBottomNav(selectedIndex: 0),
     );
   }
 
@@ -144,7 +143,6 @@ class _DescobrirScreenState extends State<DescobrirScreen> {
   }
 }
 
-// ─── Local Widgets (re-exported from rotinas_screen para manter independência) ──
 
 class _FitgroupLogo extends StatelessWidget {
   @override
@@ -194,7 +192,6 @@ class _LogoPainter extends CustomPainter {
       ..color = kWhite
       ..style = PaintingStyle.fill;
 
-    // Pessoa esquerda
     canvas.drawCircle(Offset(size.width * 0.3, 8), 6, paint);
     canvas.drawLine(
         Offset(size.width * 0.3, 14), Offset(size.width * 0.3, 30), paint);
@@ -205,7 +202,6 @@ class _LogoPainter extends CustomPainter {
     canvas.drawLine(
         Offset(size.width * 0.3, 30), Offset(size.width * 0.42, 44), paint);
 
-    // Pessoa direita
     canvas.drawCircle(Offset(size.width * 0.7, 8), 6, paint);
     canvas.drawLine(
         Offset(size.width * 0.7, 14), Offset(size.width * 0.7, 30), paint);
@@ -216,7 +212,6 @@ class _LogoPainter extends CustomPainter {
     canvas.drawLine(
         Offset(size.width * 0.7, 30), Offset(size.width * 0.82, 44), paint);
 
-    // Haltere
     final barPaint = Paint()
       ..color = kWhite
       ..style = PaintingStyle.stroke

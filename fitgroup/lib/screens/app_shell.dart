@@ -1,61 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'screens/home_screen.dart';
-import 'screens/welcome_screen.dart';
-import 'theme/app_theme.dart';
+import 'home_screen.dart';
+import 'groups_screen.dart';
+import '../theme/app_theme.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-  runApp(const FitGroupApp());
-}
-
-class FitGroupApp extends StatelessWidget {
-  const FitGroupApp({super.key});
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FitGroup',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      home: const WelcomeScreen(),
-    );
-  }
+  State<AppShell> createState() => _AppShellState();
 }
 
-class MainNavigator extends StatefulWidget {
-  const MainNavigator({super.key});
-
-  @override
-  State<MainNavigator> createState() => _MainNavigatorState();
-}
-
-class _MainNavigatorState extends State<MainNavigator> {
+class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
+
+  final _pages = const [
+    HomeScreen(),
+    _PlaceholderPage(icon: Icons.calendar_today_rounded, label: 'Agenda'),
+    GroupsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildBottomNav() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.051),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -63,7 +43,7 @@ class _MainNavigatorState extends State<MainNavigator> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
                 icon: Icons.home_rounded,
@@ -71,7 +51,7 @@ class _MainNavigatorState extends State<MainNavigator> {
                 onTap: () => setState(() => _currentIndex = 0),
               ),
               _NavItem(
-                icon: Icons.calendar_month_rounded,
+                icon: Icons.calendar_today_rounded,
                 isActive: _currentIndex == 1,
                 onTap: () => setState(() => _currentIndex = 1),
               ),
@@ -86,31 +66,6 @@ class _MainNavigatorState extends State<MainNavigator> {
       ),
     );
   }
-
-  Widget _buildBody() {
-    switch (_currentIndex) {
-      case 1:
-        return const Scaffold(
-          body: Center(
-            child: Text(
-              'Calendário',
-              style: TextStyle(fontSize: 18),
-            ),
-          ),
-        );
-      case 2:
-        return const Scaffold(
-          body: Center(
-            child: Text(
-              'Grupos',
-              style: TextStyle(fontSize: 18),
-            ),
-          ),
-        );
-      default:
-        return const HomeScreen();
-    }
-  }
 }
 
 class _NavItem extends StatelessWidget {
@@ -118,11 +73,7 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
 
-  const _NavItem({
-    required this.icon,
-    required this.isActive,
-    required this.onTap,
-  });
+  const _NavItem({required this.icon, required this.isActive, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +91,30 @@ class _NavItem extends StatelessWidget {
           icon,
           color: isActive ? AppTheme.primaryDark : Colors.grey.shade400,
           size: 26,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderPage extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _PlaceholderPage({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(label, style: TextStyle(color: Colors.grey.shade400, fontSize: 16)),
+          ],
         ),
       ),
     );

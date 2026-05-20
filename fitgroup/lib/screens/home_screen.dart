@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/app_data.dart';
+import '../state/group_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
 import '../screens/profile_screen.dart';
 import '../screens/workout_detail_screen.dart';
+import 'workout_detail_screen.dart';
+import 'profile_screen.dart';
+import 'group_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +18,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    GroupState.instance.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    GroupState.instance.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.12),
+                        color: Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -106,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGroups(BuildContext context) {
+    final groups = GroupState.instance.myGroups;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -136,8 +155,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
+        if (groups.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Você não está em nenhum grupo ainda.',
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            ),
+          )
+        else
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: GroupChip(
+                    group: groups[index],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              GroupChatScreen(group: groups[index]),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -188,6 +240,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   setState(() {
                     workout.exercises[exerciseIndex].completed =
                         !workout.exercises[exerciseIndex].completed;
+                    AppData.workouts[index].exercises[exerciseIndex].completed =
+                        !AppData.workouts[index]
+                            .exercises[exerciseIndex]
+                            .completed;
                   });
                 },
               ),

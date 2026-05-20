@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../models/group.dart';
 import '../models/chat_message.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-import 'group_editor_screen.dart';
+import 'create_group_screen.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final Group group;
@@ -17,6 +18,9 @@ class GroupChatScreen extends StatefulWidget {
 class _GroupChatScreenState extends State<GroupChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+
+  List<ChatMessage> get _messages =>
+      GroupState.instance.getMessages(widget.group.id);
 
   @override
   void initState() {
@@ -33,9 +37,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     super.dispose();
   }
 
-  void _rebuild() {
-    if (mounted) setState(() {});
-  }
+  void _rebuild() => setState(() {});
 
   void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
@@ -60,12 +62,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       ),
     );
     _messageController.clear();
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   @override
   Widget build(BuildContext context) {
-    final messages = GroupState.instance.getMessages(widget.group.id);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -73,27 +75,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           children: [
             _buildHeader(context),
             Expanded(
-              child: messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Nenhuma mensagem ainda.\nSeja o primeiro a falar!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 14),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 18),
-                          child: _ChatBubble(message: messages[index]),
-                        );
-                      },
-                    ),
+              child: ListView.builder(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: _ChatBubble(message: message),
+                  );
+                },
+              ),
             ),
             _buildComposer(context),
           ],
@@ -128,21 +122,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               const SizedBox(width: 2),
               const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
               const Spacer(),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                icon: const Icon(Icons.more_vert_rounded,
-                    color: Colors.white, size: 22),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          GroupEditorScreen(group: widget.group),
-                    ),
-                  );
-                },
-              ),
+              if (widget.group.isOwner)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: const Icon(Icons.more_vert_rounded,
+                      color: Colors.white, size: 22),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CreateGroupScreen(group: widget.group),
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
           const SizedBox(height: 2),
@@ -249,12 +245,14 @@ class _ChatBubble extends StatelessWidget {
         message.isMe ? Colors.white : const Color(0xFF17212B);
 
     return Column(
-      crossAxisAlignment:
-          message.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: message.isMe
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.only(
-              left: message.isMe ? 64 : 2, right: message.isMe ? 2 : 64),
+              left: message.isMe ? 64 : 2,
+              right: message.isMe ? 2 : 64),
           child: Text(
             message.author,
             style: TextStyle(
@@ -266,8 +264,9 @@ class _ChatBubble extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Align(
-          alignment:
-              message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+          alignment: message.isMe
+              ? Alignment.centerRight
+              : Alignment.centerLeft,
           child: Container(
             constraints: const BoxConstraints(maxWidth: 220),
             decoration: BoxDecoration(
@@ -275,8 +274,10 @@ class _ChatBubble extends StatelessWidget {
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(14),
                 topRight: const Radius.circular(14),
-                bottomLeft: Radius.circular(message.isMe ? 14 : 4),
-                bottomRight: Radius.circular(message.isMe ? 4 : 14),
+                bottomLeft:
+                    Radius.circular(message.isMe ? 14 : 4),
+                bottomRight:
+                    Radius.circular(message.isMe ? 4 : 14),
               ),
               border: Border.all(
                 color: message.isMe

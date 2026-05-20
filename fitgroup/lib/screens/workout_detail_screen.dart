@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_data.dart';
 import '../theme/app_theme.dart';
+import 'completed_workout_screen.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
@@ -191,29 +192,78 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.teal.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('🎉', style: TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              const Text(
-                'Treino completo!',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
                   color: AppTheme.teal,
-                  fontSize: 16,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
-              Text(
-                'Parabéns, continue assim!',
-                style: TextStyle(
-                  color: AppTheme.teal.withOpacity(0.7),
-                  fontSize: 13,
-                ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    ' Treino completo!',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.teal,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'Parabéns, continue assim!',
+                    style: TextStyle(
+                      color: AppTheme.teal.withOpacity(0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CompletedWorkoutScreen(
+                      workout: widget.workout,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 16, 185, 129),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Salvar progresso',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ),
         ],
       ),

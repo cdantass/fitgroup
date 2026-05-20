@@ -68,20 +68,20 @@ class _RotinasScreenState extends State<RotinasScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 100,
+          height: 300,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 300,
-                  height: 300,
+                  width: 600,
+                  height: 600,
                   child: Image.asset(
                     'img/logo_fitgroup.png',
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => CustomPaint(
-                      size: const Size(200, 200),
+                      size: const Size(600, 600),
                       painter: _LogoPainter(),
                     ),
                   ),

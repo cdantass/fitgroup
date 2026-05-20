@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-import 'create_group_screen.dart';
+// import 'create_group_screen.dart';
 import 'group_chat_screen.dart';
+import 'group_editor_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -178,15 +179,20 @@ class _GroupsScreenState extends State<GroupsScreen> {
       case 'chat':
         Navigator.push(
             context, MaterialPageRoute(builder: (_) => GroupChatScreen(group: group)));
+        break;
       case 'edit':
         Navigator.push(
-            context, MaterialPageRoute(builder: (_) => CreateGroupScreen(group: group)));
+            context, MaterialPageRoute(builder: (_) => GroupEditorScreen(group: group)));
+        break;
       case 'leave':
         _showLeaveDialog(group);
+        break;
       case 'delete':
         _showDeleteDialog(group);
+        break;
       case 'join':
         _showJoinDialog(group);
+        break;
     }
   }
 
@@ -274,7 +280,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   void _openCreate() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const CreateGroupScreen()));
+        context, MaterialPageRoute(builder: (_) => const GroupEditorScreen()));
   }
 }
 

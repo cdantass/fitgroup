@@ -4,7 +4,8 @@ import '../models/group.dart';
 import '../models/chat_message.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-import 'create_group_screen.dart';
+// import 'create_group_screen.dart';
+import 'group_editor_screen.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final Group group;
@@ -134,7 +135,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            CreateGroupScreen(group: widget.group),
+                            GroupEditorScreen(group: widget.group),
                       ),
                     );
                   },

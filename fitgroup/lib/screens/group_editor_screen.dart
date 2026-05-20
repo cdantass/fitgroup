@@ -1,12 +1,13 @@
  import 'package:flutter/material.dart';
 
-import '../models/app_data.dart';
+import '../models/group.dart';
+import '../state/group_state.dart';
 import '../theme/app_theme.dart';
 
 class GroupEditorScreen extends StatefulWidget {
-  final FitGroup group;
+  final Group? group;
 
-  const GroupEditorScreen({super.key, required this.group});
+  const GroupEditorScreen({super.key, this.group});
 
   @override
   State<GroupEditorScreen> createState() => _GroupEditorScreenState();
@@ -16,6 +17,7 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
   late final TextEditingController _groupNameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _memberSearchController;
+  late final bool _isEditing;
 
   late final List<_GroupMember> _members = [
     const _GroupMember(name: 'Cauã', isAdmin: true),
@@ -26,9 +28,11 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
   @override
   void initState() {
     super.initState();
-    _groupNameController = TextEditingController(text: widget.group.name);
+    _isEditing = widget.group != null;
+    _groupNameController = TextEditingController(text: widget.group?.name ?? '');
     _descriptionController = TextEditingController(
-      text: 'Grupo para combinar treinos, organizar membros e acompanhar a evolução.',
+      text: widget.group?.description ??
+          'Grupo para combinar treinos, organizar membros e acompanhar a evolução.',
     );
     _memberSearchController = TextEditingController();
   }
@@ -211,9 +215,36 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
                               ),
                             ),
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Grupo salvo em modo mock.')),
-                              );
+                              final name = _groupNameController.text.trim();
+                              final description = _descriptionController.text.trim();
+                              if (name.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Informe o nome do grupo.')),
+                                );
+                                return;
+                              }
+
+                              if (_isEditing && widget.group != null) {
+                                GroupState.instance.updateGroup(
+                                  widget.group!.id,
+                                  name: name,
+                                  description: description,
+                                  color: widget.group!.color,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Grupo atualizado com sucesso.')),
+                                );
+                              } else {
+                                GroupState.instance.createGroup(
+                                  name: name,
+                                  description: description,
+                                  color: widget.group?.color ?? AppTheme.purple,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Grupo criado com sucesso.')),
+                                );
+                              }
+
                               Navigator.pop(context);
                             },
                             child: const Text('Salvar grupo'),
@@ -242,9 +273,9 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
             color: const Color(0xFF0F172A),
           ),
           const SizedBox(width: 4),
-          const Text(
-            'Criar grupo',
-            style: TextStyle(
+          Text(
+            _isEditing ? 'Editar grupo' : 'Criar grupo',
+            style: const TextStyle(
               color: AppTheme.primaryDark,
               fontSize: 16,
               fontWeight: FontWeight.w700,

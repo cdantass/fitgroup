@@ -4,6 +4,8 @@ import '../state/group_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
+import '../screens/profile_screen.dart';
+import '../screens/workout_detail_screen.dart';
 import 'workout_detail_screen.dart';
 import 'profile_screen.dart';
 import 'group_chat_screen.dart';
@@ -61,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: AppTheme.primaryDark,
+      color: const Color.fromARGB(255, 26, 26, 46),
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -138,6 +140,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: AppData.groups.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GroupChip(
+                  group: AppData.groups[index],
+                ),
+              );
+            },
         if (groups.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -199,20 +216,30 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: AppData.workouts.length,
           itemBuilder: (context, index) {
+            final workout = AppData.workouts[index];
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: WorkoutCard(
-                workout: AppData.workouts[index],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WorkoutDetailScreen(
-                      workout: AppData.workouts[index],
+                workout: workout,
+
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutDetailScreen(
+                        workout: workout,
+                      ),
                     ),
-                  ),
-                ).then((_) => setState(() {})),
+                  ).then((_) {
+                    setState(() {});
+                  });
+                },
+
                 onExerciseToggle: (exerciseIndex) {
                   setState(() {
+                    workout.exercises[exerciseIndex].completed =
+                        !workout.exercises[exerciseIndex].completed;
                     AppData.workouts[index].exercises[exerciseIndex].completed =
                         !AppData.workouts[index]
                             .exercises[exerciseIndex]

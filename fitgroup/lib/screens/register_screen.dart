@@ -81,6 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                         onPressed: () {
+                          // TODO: registrar usuário
                           Navigator.pop(context);
                         },
                         child: const Text('REGISTRAR'),

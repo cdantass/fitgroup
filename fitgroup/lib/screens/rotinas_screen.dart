@@ -43,7 +43,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                   const SizedBox(height: 16),
                   _buildSearchBar(),
                   const SizedBox(height: 12),
-                  _buildTabs(),
+                  _buildTabs(context),
                   const SizedBox(height: 16),
                   Expanded(child: _buildRotinasList()),
                 ],
@@ -52,12 +52,8 @@ class _RotinasScreenState extends State<RotinasScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/criar'),
-        backgroundColor: kDarkNavy,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: kWhite, size: 28),
-      ),
+      floatingActionButton: _buildFAB(context),
+      bottomNavigationBar: const FitgroupBottomNav(selectedIndex: 0),
     );
   }
 
@@ -65,31 +61,11 @@ class _RotinasScreenState extends State<RotinasScreen> {
     return Container(
       color: kDarkNavy,
       width: double.infinity,
-      child: SafeArea(
-        bottom: false,
-        child: SizedBox(
-          height: 100,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: Image.asset(
-                    'img/logo_fitgroup.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => CustomPaint(
-                      size: const Size(200, 200),
-                      painter: _LogoPainter(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      padding: const EdgeInsets.only(top: 56, bottom: 24),
+      child: Column(
+        children: [
+          _FitgroupLogo(),
+        ],
       ),
     );
   }
@@ -115,7 +91,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
     );
   }
 
-  Widget _buildTabs() {
+  Widget _buildTabs(BuildContext context) {
     return Container(
       height: 44,
       decoration: BoxDecoration(
@@ -126,10 +102,20 @@ class _RotinasScreenState extends State<RotinasScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _TabButton(label: 'Suas rotinas', isActive: true, onTap: () {}),
+            child: _TabButton(
+              label: 'Suas rotinas',
+              isActive: true,
+              onTap: () {},
+            ),
           ),
           Expanded(
-            child: _TabButton(label: 'Descobrir', isActive: false, onTap: () {}),
+            child: _TabButton(
+              label: 'Descobrir',
+              isActive: false,
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/descobrir');
+              },
+            ),
           ),
         ],
       ),
@@ -150,6 +136,55 @@ class _RotinasScreenState extends State<RotinasScreen> {
       },
     );
   }
+
+  Widget _buildFAB(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: () {
+        Navigator.pushNamed(context, '/criar');
+      },
+      backgroundColor: kDarkNavy,
+      shape: const CircleBorder(),
+      child: const Icon(Icons.add, color: kWhite, size: 28),
+    );
+  }
+}
+
+// ─── Shared Widgets ──────────────────────────────────────────────────────────
+
+class _FitgroupLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Ícone customizado com duas figuras e haltere
+        SizedBox(
+          width: 60,
+          height: 45,
+          child: CustomPaint(painter: _LogoPainter()),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'fitgroup',
+          style: TextStyle(
+            color: kWhite,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'TREINO & BEM-ESTAR',
+          style: TextStyle(
+            color: kWhite,
+            fontSize: 9,
+            letterSpacing: 3,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _LogoPainter extends CustomPainter {
@@ -165,27 +200,45 @@ class _LogoPainter extends CustomPainter {
       ..color = kWhite
       ..style = PaintingStyle.fill;
 
+    // Pessoa esquerda
     canvas.drawCircle(Offset(size.width * 0.3, 8), 6, paint);
-    canvas.drawLine(Offset(size.width * 0.3, 14), Offset(size.width * 0.3, 30), paint);
-    canvas.drawLine(Offset(size.width * 0.15, 22), Offset(size.width * 0.45, 22), paint);
-    canvas.drawLine(Offset(size.width * 0.3, 30), Offset(size.width * 0.18, 44), paint);
-    canvas.drawLine(Offset(size.width * 0.3, 30), Offset(size.width * 0.42, 44), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.3, 14), Offset(size.width * 0.3, 30), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.15, 22), Offset(size.width * 0.45, 22), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.3, 30), Offset(size.width * 0.18, 44), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.3, 30), Offset(size.width * 0.42, 44), paint);
 
+    // Pessoa direita
     canvas.drawCircle(Offset(size.width * 0.7, 8), 6, paint);
-    canvas.drawLine(Offset(size.width * 0.7, 14), Offset(size.width * 0.7, 30), paint);
-    canvas.drawLine(Offset(size.width * 0.55, 22), Offset(size.width * 0.85, 22), paint);
-    canvas.drawLine(Offset(size.width * 0.7, 30), Offset(size.width * 0.58, 44), paint);
-    canvas.drawLine(Offset(size.width * 0.7, 30), Offset(size.width * 0.82, 44), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.7, 14), Offset(size.width * 0.7, 30), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.55, 22), Offset(size.width * 0.85, 22), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.7, 30), Offset(size.width * 0.58, 44), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.7, 30), Offset(size.width * 0.82, 44), paint);
 
+    // Haltere no meio
     final barPaint = Paint()
       ..color = kWhite
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawLine(Offset(size.width * 0.38, 22), Offset(size.width * 0.62, 22), barPaint);
-    canvas.drawRect(Rect.fromCenter(center: Offset(size.width * 0.35, 22), width: 6, height: 10), fill);
-    canvas.drawRect(Rect.fromCenter(center: Offset(size.width * 0.65, 22), width: 6, height: 10), fill);
+    canvas.drawLine(Offset(size.width * 0.38, 22),
+        Offset(size.width * 0.62, 22), barPaint);
+    canvas.drawRect(
+        Rect.fromCenter(
+            center: Offset(size.width * 0.35, 22), width: 6, height: 10),
+        fill);
+    canvas.drawRect(
+        Rect.fromCenter(
+            center: Offset(size.width * 0.65, 22), width: 6, height: 10),
+        fill);
   }
 
   @override
@@ -197,7 +250,11 @@ class _TabButton extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
 
-  const _TabButton({required this.label, required this.isActive, required this.onTap});
+  const _TabButton({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +285,11 @@ class _RotinaCard extends StatelessWidget {
   final String nome;
   final String autor;
 
-  const _RotinaCard({required this.categoria, required this.nome, required this.autor});
+  const _RotinaCard({
+    required this.categoria,
+    required this.nome,
+    required this.autor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -246,15 +307,110 @@ class _RotinaCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(categoria, style: TextStyle(fontSize: 11, color: kTextGrey, fontWeight: FontWeight.w400)),
+                Text(
+                  categoria,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: kTextGrey,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(nome, style: const TextStyle(fontSize: 15, color: kTextDark, fontWeight: FontWeight.w600)),
+                Text(
+                  nome,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: kTextDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(autor, style: TextStyle(fontSize: 13, color: kTextGrey)),
+                Text(
+                  autor,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: kTextGrey,
+                  ),
+                ),
               ],
             ),
           ),
           Icon(Icons.more_vert, color: kTextGrey, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class FitgroupBottomNav extends StatelessWidget {
+  final int selectedIndex;
+  const FitgroupBottomNav({super.key, required this.selectedIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: kWhite,
+        border: Border(top: BorderSide(color: kBorderGrey)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _NavItem(
+            icon: Icons.home_outlined,
+            isSelected: selectedIndex == 0,
+            onTap: () => Navigator.pushReplacementNamed(context, '/rotinas'),
+          ),
+          _NavItem(
+            icon: Icons.calendar_today_outlined,
+            isSelected: selectedIndex == 1,
+            onTap: () {},
+          ),
+          _NavItem(
+            icon: Icons.group_outlined,
+            isSelected: selectedIndex == 2,
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? kDarkNavy : kTextGrey,
+            size: 26,
+          ),
+          if (isSelected)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: kDarkNavy,
+                shape: BoxShape.circle,
+              ),
+            ),
         ],
       ),
     );

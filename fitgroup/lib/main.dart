@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'models/group.dart';
+import 'models/app_data.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/rotinas_screen.dart';
 import 'screens/criar_screen.dart';
-import 'screens/groups_screen.dart';
 import 'screens/group_chat_screen.dart';
 import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
@@ -38,13 +37,12 @@ class FitGroupApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const MainShell(initialIndex: 0),
         '/rotinas': (_) => const MainShell(initialIndex: 1),
-        '/groups': (_) => const MainShell(initialIndex: 2),
         '/profile': (_) => const ProfileScreen(),
         '/criar': (_) => const CriarScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/group-chat') {
-          final group = settings.arguments as Group;
+          final group = settings.arguments as FitGroup;
           return MaterialPageRoute(
             builder: (_) => GroupChatScreen(group: group),
           );
@@ -74,6 +72,20 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _switchTab(int index) {
+    if (index == 2) {
+      if (AppData.groups.isEmpty) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GroupChatScreen(
+            group: AppData.groups.first,
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _currentIndex = index;
     });
@@ -83,8 +95,6 @@ class _MainShellState extends State<MainShell> {
     switch (_currentIndex) {
       case 1:
         return const RotinasScreen();
-      case 2:
-        return const GroupsScreen();
       case 0:
       default:
         return const HomeScreen();
@@ -151,12 +161,20 @@ class _BottomNav extends StatelessWidget {
                   ),
                   _NavIcon(
                     icon: Icons.groups_rounded,
-                    selected: currentIndex == 2,
+                    selected: false,
                     onTap: () => onTap(2),
                   ),
                 ],
               ),
-
+              const SizedBox(height: 8),
+              Container(
+                width: 110,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
             ],
           ),
         ),

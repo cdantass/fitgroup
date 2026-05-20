@@ -38,6 +38,7 @@ class _CriarScreenState extends State<CriarScreen> {
 
   void _salvar() {
     if (_formKey.currentState?.validate() ?? false) {
+      // Lógica de salvar
       Navigator.pop(context);
     }
   }
@@ -99,6 +100,7 @@ class _CriarScreenState extends State<CriarScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const FitgroupBottomNav(selectedIndex: 1),
     );
   }
 

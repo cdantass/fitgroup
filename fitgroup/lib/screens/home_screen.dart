@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/app_data.dart';
-import '../models/group.dart';
-import '../state/group_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
 import 'workout_detail_screen.dart';
-import 'profile_screen.dart';
-import 'group_chat_screen.dart';
+import '../screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,27 +14,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    GroupState.instance.addListener(_rebuild);
-  }
-
-  @override
-  void dispose() {
-    GroupState.instance.removeListener(_rebuild);
-    super.dispose();
-  }
-
-  void _rebuild() => setState(() {});
-
-  void _openChat(Group group) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => GroupChatScreen(group: group)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,20 +49,20 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 100,
+          height: 100, 
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Positioned(
-                  left: -40,
+                  left: -40, 
                   child: SizedBox(
-                    width: 200,
-                    height: 200,
+                    width: 200, 
+                    height: 200, 
                     child: Image.asset(
                       'img/logo_fitgroup.png',
-                      fit: BoxFit.contain,
+                      fit: BoxFit.contain, 
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.fitness_center_rounded,
                         color: Colors.white,
@@ -98,16 +74,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ProfileScreen()),
-                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
                     child: Container(
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -127,8 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGroups(BuildContext context) {
-    final myGroups = GroupState.instance.myGroups;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -144,34 +121,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        if (myGroups.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Você ainda não entrou em nenhum grupo.',
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-            ),
-          )
-        else
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: myGroups.length,
-              itemBuilder: (context, index) {
-                final group = myGroups[index];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: GroupChip(
-                    group: group,
-                    onTap: () => _openChat(group),
-                  ),
-                );
-              },
-            ),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: AppData.groups.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GroupChip(group: AppData.groups[index]),
+              );
+            },
           ),
+        ),
       ],
     );
   }
@@ -183,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 20, 20, 14),
           child: Text(
-            'Seus treinos',
+            'Seus treino',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -213,9 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onExerciseToggle: (exerciseIndex) {
                   setState(() {
                     AppData.workouts[index].exercises[exerciseIndex].completed =
-                        !AppData.workouts[index]
-                            .exercises[exerciseIndex]
-                            .completed;
+                        !AppData.workouts[index].exercises[exerciseIndex].completed;
                   });
                 },
               ),

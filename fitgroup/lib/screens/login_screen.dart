@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -59,10 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text('Email', style: TextStyle(color: Colors.black87)),
                     TextField(
                       controller: _emailCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'lazaro@email.com',
-                        isDense: true,
-                      ),
+                      decoration: const InputDecoration(hintText: 'lazaro@email.com', isDense: true),
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
@@ -88,14 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           backgroundColor: AppTheme.primaryDark,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                         onPressed: () {
-                          Navigator.pushNamedAndRemoveUntil(
+                          // TODO: integrar com backend/autenticação
+                          // Navega para Home e limpa a pilha para evitar voltar à tela de login
+                          Navigator.pushAndRemoveUntil(
                             context,
-                            '/home',
+                            MaterialPageRoute(builder: (_) => const HomeScreen()),
                             (route) => false,
                           );
                         },
@@ -111,9 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
                             );
                           },
                           child: const Text('Registre-se'),
@@ -130,3 +126,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+ 

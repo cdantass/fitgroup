@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'models/app_data.dart';
-import 'screens/welcome_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/rotinas_screen.dart';
-import 'screens/criar_screen.dart';
-import 'screens/group_chat_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -31,149 +25,51 @@ class FitGroupApp extends StatelessWidget {
       title: 'FitGroup',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const WelcomeScreen(),
-      routes: {
-        '/login': (_) => const LoginScreen(),
-        '/register': (_) => const RegisterScreen(),
-        '/home': (_) => const MainShell(initialIndex: 0),
-        '/rotinas': (_) => const MainShell(initialIndex: 1),
-        '/profile': (_) => const ProfileScreen(),
-        '/criar': (_) => const CriarScreen(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/group-chat') {
-          final group = settings.arguments as FitGroup;
-          return MaterialPageRoute(
-            builder: (_) => GroupChatScreen(group: group),
-          );
-        }
-        return null;
-      },
+      home: const MainNavigator(),
     );
   }
 }
 
-class MainShell extends StatefulWidget {
-  final int initialIndex;
-
-  const MainShell({super.key, this.initialIndex = 0});
+class MainNavigator extends StatefulWidget {
+  const MainNavigator({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  State<MainNavigator> createState() => _MainNavigatorState();
 }
 
-class _MainShellState extends State<MainShell> {
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex;
-  }
-
-  void _switchTab(int index) {
-    if (index == 2) {
-      if (AppData.groups.isEmpty) return;
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GroupChatScreen(
-            group: AppData.groups.first,
-          ),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
-  Widget _buildBody() {
-    switch (_currentIndex) {
-      case 1:
-        return const RotinasScreen();
-      case 0:
-      default:
-        return const HomeScreen();
-    }
-  }
+class _MainNavigatorState extends State<MainNavigator> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(),
-      bottomNavigationBar: _BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _switchTab,
-      ),
+      body: _currentIndex == 0 ? const WelcomeScreen() : const SizedBox(),
+      bottomNavigationBar: _currentIndex == 0 ? null : _buildBottomNav(),
     );
   }
-}
 
-class _BottomNav extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-
-  const _BottomNav({
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBottomNav() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(26),
-          topRight: Radius.circular(26),
-        ),
         boxShadow: [
           BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.12),
-            blurRadius: 18,
-            offset: Offset(0, -4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 82,
-          child: Column(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavIcon(
-                    icon: Icons.home_rounded,
-                    selected: currentIndex == 0,
-                    onTap: () => onTap(0),
-                  ),
-                  _NavIcon(
-                    icon: Icons.calendar_month_rounded,
-                    selected: currentIndex == 1,
-                    onTap: () => onTap(1),
-                  ),
-                  _NavIcon(
-                    icon: Icons.groups_rounded,
-                    selected: false,
-                    onTap: () => onTap(2),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 110,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+              _NavItem(
+                icon: Icons.home_rounded,
+                isActive: _currentIndex == 0,
+                onTap: () => setState(() => _currentIndex = 0),
               ),
             ],
           ),
@@ -183,49 +79,35 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
-class _NavIcon extends StatelessWidget {
+class _NavItem extends StatelessWidget {
   final IconData icon;
-  final bool selected;
+  final bool isActive;
   final VoidCallback onTap;
 
-  const _NavIcon({
+  const _NavItem({
     required this.icon,
-    required this.selected,
+    required this.isActive,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    const Color iconColor = Color(0xFF0F2233);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 72,
-        height: 44,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 31,
-              color: iconColor,
-            ),
-            const SizedBox(height: 3),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: selected ? 1 : 0,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0F2233),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.grey.shade200
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(
+          icon,
+          color: isActive ? AppTheme.primaryDark : Colors.grey.shade400,
+          size: 26,
         ),
       ),
     );

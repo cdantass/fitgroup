@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_data.dart';
+import 'workout_detail_screen.dart';
+
 const Color kDarkNavy = Color(0xFF1C2333);
 const Color kWhite = Color(0xFFFFFFFF);
 const Color kLightGrey = Color(0xFFF5F5F5);
@@ -16,10 +19,17 @@ class RotinasScreen extends StatefulWidget {
 
 class _RotinasScreenState extends State<RotinasScreen> {
   final TextEditingController _searchController = TextEditingController();
+  bool _abaDescobrir = false; // controla qual aba está ativa
 
-  final List<Map<String, String>> _rotinas = [
-    {'categoria': 'Musculação', 'nome': 'Full Body Iniciante', 'autor': 'por João'},
-    {'categoria': 'Musculação', 'nome': 'Cardio', 'autor': 'por João'},
+  final List<Workout> _minhasRotinas = [
+    AppData.workouts[0],
+    AppData.workouts[1],
+  ];
+
+  final List<Workout> _rotinasDescobrir = [
+    AppData.workouts[2],
+    AppData.workouts[1],
+    AppData.workouts[0],
   ];
 
   @override
@@ -30,6 +40,8 @@ class _RotinasScreenState extends State<RotinasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final rotinas = _abaDescobrir ? _rotinasDescobrir : _minhasRotinas;
+
     return Scaffold(
       backgroundColor: kWhite,
       body: Column(
@@ -45,7 +57,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                   const SizedBox(height: 12),
                   _buildTabs(),
                   const SizedBox(height: 16),
-                  Expanded(child: _buildRotinasList()),
+                  Expanded(child: _buildRotinasList(rotinas)),
                 ],
               ),
             ),
@@ -126,26 +138,42 @@ class _RotinasScreenState extends State<RotinasScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _TabButton(label: 'Suas rotinas', isActive: true, onTap: () {}),
+            child: _TabButton(
+              label: 'Suas rotinas',
+              isActive: !_abaDescobrir,
+              onTap: () => setState(() => _abaDescobrir = false),
+            ),
           ),
           Expanded(
-            child: _TabButton(label: 'Descobrir', isActive: false, onTap: () {}),
+            child: _TabButton(
+              label: 'Descobrir',
+              isActive: _abaDescobrir,
+              onTap: () => setState(() => _abaDescobrir = true),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRotinasList() {
+  Widget _buildRotinasList(List<Workout> rotinas) {
     return ListView.separated(
-      itemCount: _rotinas.length,
+      itemCount: rotinas.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final rotina = _rotinas[index];
-        return _RotinaCard(
-          categoria: rotina['categoria']!,
-          nome: rotina['nome']!,
-          autor: rotina['autor']!,
+        final rotina = rotinas[index];
+        return GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => WorkoutDetailScreen(workout: rotina),
+            ),
+          ),
+          child: _RotinaCard(
+            categoria: rotina.subtitle,
+            nome: rotina.title,
+            autor: 'por FitGroup',
+          ),
         );
       },
     );

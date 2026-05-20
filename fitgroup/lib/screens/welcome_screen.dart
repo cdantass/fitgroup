@@ -8,7 +8,6 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logosize = MediaQuery.of(context).size.width * 0.9;
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
       body: SafeArea(
@@ -21,8 +20,8 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   Image.asset(
                     'img/logo_fitgroup.png',
-                    width: logosize,
-                    height: logosize,
+                    width: 320,
+                    height: 320,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.fitness_center_rounded,

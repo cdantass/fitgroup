@@ -15,7 +15,7 @@
 ### Fluxo de Rotina
 | Alunos | Atribuições |
 | :--- | :--- |
-| **Pedro Henrique do Nascimento Miranda** | • Tela de "Treinos" <br> • Tela dos "Treinos Concluídos" |
+| **Pedro Henrique do Nascimento Miranda** | • Tela de "Treinos" <br> • Tela dos "Treinos Concluídos" <br> • "Hotbar com treino, home e grupos" |
 | **José Alexsandro de França Menezes** | • Tela de "Suas rotinas" <br> • Telas de "Descobrir e Criar rotinas" |
 
 ---

@@ -172,7 +172,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 value: progress,
                 backgroundColor: Colors.white.withOpacity(0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  progress == 1.0 ? AppTheme.teal : AppTheme.purple,
+                  AppTheme.teal,
                 ),
                 minHeight: 4,
               ),
@@ -255,6 +255,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
+                overlayColor: Colors.white.withOpacity(0.15),
+              ).copyWith(
+                elevation: WidgetStateProperty.resolveWith<double>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return 8;
+                    }
+                    return 0;
+                  },
+                ),
               ),
               child: const Text(
                 'Salvar progresso',
@@ -271,7 +281,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   }
 }
 
-class _ExerciseRow extends StatelessWidget {
+class _ExerciseRow extends StatefulWidget {
   final Exercise exercise;
   final int index;
   final VoidCallback onToggle;
@@ -285,44 +295,72 @@ class _ExerciseRow extends StatelessWidget {
   });
 
   @override
+  State<_ExerciseRow> createState() => _ExerciseRowState();
+}
+
+class _ExerciseRowState extends State<_ExerciseRow> {
+  bool _isNumberHovered = false;
+  bool _isEditHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onEdit,
+      onTap: widget.onEdit,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            GestureDetector(
-              onTap: onToggle,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: exercise.completed
-                      ? AppTheme.primaryDark
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: exercise.completed
+            MouseRegion(
+              onEnter: (_) => setState(() => _isNumberHovered = true),
+              onExit: (_) => setState(() => _isNumberHovered = false),
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: widget.onToggle,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.exercise.completed
                         ? AppTheme.primaryDark
-                        : Colors.white.withOpacity(0.25),
-                    width: 1.5,
+                        : (_isNumberHovered
+                            ? Colors.white.withOpacity(0.08)
+                            : Colors.transparent),
+                    border: Border.all(
+                      color: widget.exercise.completed
+                          ? AppTheme.primaryDark
+                          : (_isNumberHovered
+                              ? Colors.white.withOpacity(0.4)
+                              : Colors.white.withOpacity(0.25)),
+                      width: _isNumberHovered ? 2 : 1.5,
+                    ),
+                    boxShadow: _isNumberHovered && !widget.exercise.completed
+                        ? [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.15),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : [],
                   ),
-                ),
-                child: Center(
-                  child: exercise.completed
-                      ? const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 20)
-                      : Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                  child: Center(
+                    child: widget.exercise.completed
+                        ? const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 20)
+                        : Text(
+                            '${widget.index + 1}',
+                            style: TextStyle(
+                              color: _isNumberHovered
+                                  ? Colors.white.withOpacity(1)
+                                  : Colors.white.withOpacity(0.8),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ),
             ),
@@ -332,14 +370,14 @@ class _ExerciseRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    exercise.name,
+                    widget.exercise.name,
                     style: TextStyle(
-                      color: exercise.completed
+                      color: widget.exercise.completed
                           ? Colors.white.withOpacity(0.4)
                           : Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      decoration: exercise.completed
+                      decoration: widget.exercise.completed
                           ? TextDecoration.lineThrough
                           : TextDecoration.none,
                       decorationColor: Colors.white.withOpacity(0.4),
@@ -347,7 +385,7 @@ class _ExerciseRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    exercise.detail,
+                    widget.exercise.detail,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.45),
                       fontSize: 12,
@@ -357,10 +395,36 @@ class _ExerciseRow extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.edit_outlined,
-              color: Colors.white.withOpacity(0.2),
-              size: 18,
+            MouseRegion(
+              onEnter: (_) => setState(() => _isEditHovered = true),
+              onExit: (_) => setState(() => _isEditHovered = false),
+              cursor: SystemMouseCursors.click,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isEditHovered
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.transparent,
+                  boxShadow: _isEditHovered
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.1),
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          )
+                        ]
+                      : [],
+                ),
+                child: Icon(
+                  Icons.edit_outlined,
+                  color: _isEditHovered
+                      ? Colors.white.withOpacity(0.6)
+                      : Colors.white.withOpacity(0.2),
+                  size: 18,
+                ),
+              ),
             ),
           ],
         ),
@@ -492,13 +556,23 @@ class _EditExerciseSheetState extends State<_EditExerciseSheet> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.purple,
+                backgroundColor: AppTheme.teal,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
+                overlayColor: Colors.white.withOpacity(0.15),
+              ).copyWith(
+                elevation: WidgetStateProperty.resolveWith<double>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return 8;
+                    }
+                    return 0;
+                  },
+                ),
               ),
               child: const Text(
                 'Salvar',
@@ -632,7 +706,7 @@ class _WeightInputState extends State<_WeightInput> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: _focus.hasFocus
-              ? AppTheme.purple.withOpacity(0.6)
+              ? AppTheme.teal.withOpacity(0.6)
               : Colors.transparent,
           width: 1.5,
         ),
@@ -698,31 +772,58 @@ class _WeightInputState extends State<_WeightInput> {
 }
 
 
-class _CircleBtn extends StatelessWidget {
+class _CircleBtn extends StatefulWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
   const _CircleBtn({required this.icon, this.onTap});
 
   @override
+  State<_CircleBtn> createState() => _CircleBtnState();
+}
+
+class _CircleBtnState extends State<_CircleBtn> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final active = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: active
-              ? AppTheme.purple.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
-        ),
-        child: Icon(
-          icon,
-          color: active ? AppTheme.purple : Colors.white.withOpacity(0.2),
-          size: 20,
+    final active = widget.onTap != null;
+    return MouseRegion(
+      onEnter: (_) {
+        if (active) setState(() => _isHovered = true);
+      },
+      onExit: (_) {
+        if (active) setState(() => _isHovered = false);
+      },
+      cursor: active ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active
+                ? (_isHovered
+                    ? AppTheme.teal.withOpacity(0.35)
+                    : AppTheme.teal.withOpacity(0.2))
+                : Colors.white.withOpacity(0.05),
+            boxShadow: active && _isHovered
+                ? [
+                    BoxShadow(
+                      color: AppTheme.teal.withOpacity(0.4),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    )
+                  ]
+                : [],
+          ),
+          child: Icon(
+            widget.icon,
+            color: active ? AppTheme.teal : Colors.white.withOpacity(0.2),
+            size: 20,
+          ),
         ),
       ),
     );

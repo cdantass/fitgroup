@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/app_data.dart';
+import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/workout_card.dart';
 import '../widgets/group_chip.dart';
-import '../screens/profile_screen.dart';
-import '../screens/workout_detail_screen.dart';
 import 'workout_detail_screen.dart';
 import 'profile_screen.dart';
 import 'group_chat_screen.dart';
@@ -31,6 +30,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _rebuild() => setState(() {});
+
+  void _openChat(Group group) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => GroupChatScreen(group: group)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color.fromARGB(255, 26, 26, 46),
+      color: AppTheme.primaryDark,
       child: SafeArea(
         bottom: false,
         child: SizedBox(
@@ -92,14 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ProfileScreen()),
+                    ),
                     child: Container(
                       width: 38,
                       height: 38,
@@ -124,7 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGroups(BuildContext context) {
-    final groups = GroupState.instance.myGroups;
+    final myGroups = GroupState.instance.myGroups;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,26 +144,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: AppData.groups.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: GroupChip(
-                  group: AppData.groups[index],
-                ),
-              );
-            },
-        if (groups.isEmpty)
+        if (myGroups.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Você não está em nenhum grupo ainda.',
+              'Você ainda não entrou em nenhum grupo.',
               style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
           )
@@ -170,21 +159,14 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: groups.length,
+              itemCount: myGroups.length,
               itemBuilder: (context, index) {
+                final group = myGroups[index];
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: GroupChip(
-                    group: groups[index],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              GroupChatScreen(group: groups[index]),
-                        ),
-                      );
-                    },
+                    group: group,
+                    onTap: () => _openChat(group),
                   ),
                 );
               },
@@ -216,30 +198,20 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: AppData.workouts.length,
           itemBuilder: (context, index) {
-            final workout = AppData.workouts[index];
-
             return Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: WorkoutCard(
-                workout: workout,
-
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkoutDetailScreen(
-                        workout: workout,
-                      ),
+                workout: AppData.workouts[index],
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WorkoutDetailScreen(
+                      workout: AppData.workouts[index],
                     ),
-                  ).then((_) {
-                    setState(() {});
-                  });
-                },
-
+                  ),
+                ).then((_) => setState(() {})),
                 onExerciseToggle: (exerciseIndex) {
                   setState(() {
-                    workout.exercises[exerciseIndex].completed =
-                        !workout.exercises[exerciseIndex].completed;
                     AppData.workouts[index].exercises[exerciseIndex].completed =
                         !AppData.workouts[index]
                             .exercises[exerciseIndex]

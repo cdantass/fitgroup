@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _passConfirmCtrl = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -80,10 +82,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text('REGISTRAR'),
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                final name = _nameCtrl.text.trim();
+                                final email = _emailCtrl.text.trim();
+                                final password = _passCtrl.text;
+                                final confirm = _passConfirmCtrl.text;
+
+                                if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Preencha todos os campos')),
+                                  );
+                                  return;
+                                }
+
+                                if (!email.endsWith('@souunit.com.br')) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Use seu email institucional @souunit.com.br'),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (password != confirm) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('As senhas não coincidem')),
+                                  );
+                                  return;
+                                }
+
+                                setState(() => _isLoading = true);
+                                try {
+                                  await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                                    email: email,
+                                    password: password,
+                                  );
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Conta criada com sucesso')),
+                                  );
+                                  Navigator.pop(context);
+                                } on FirebaseAuthException catch (e) {
+                                  String message;
+                                  if (e.code == 'weak-password') {
+                                    message = 'Senha muito fraca.';
+                                  } else if (e.code == 'email-already-in-use') {
+                                    message = 'Email já em uso.';
+                                  } else if (e.code == 'invalid-email') {
+                                    message = 'Email inválido.';
+                                  } else {
+                                    message = e.message ?? 'Erro ao criar conta.';
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+                                } finally {
+                                  if (mounted) setState(() => _isLoading = false);
+                                }
+                              },
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text('REGISTRAR'),
                       ),
                     ),
                     const Spacer(),

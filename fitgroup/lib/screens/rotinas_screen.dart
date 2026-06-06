@@ -1,5 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../models/app_data.dart';
 import 'workout_detail_screen.dart';
 
@@ -19,18 +19,7 @@ class RotinasScreen extends StatefulWidget {
 
 class _RotinasScreenState extends State<RotinasScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _abaDescobrir = false; // controla qual aba está ativa
-
-  final List<Workout> _minhasRotinas = [
-    AppData.workouts[0],
-    AppData.workouts[1],
-  ];
-
-  final List<Workout> _rotinasDescobrir = [
-    AppData.workouts[2],
-    AppData.workouts[1],
-    AppData.workouts[0],
-  ];
+  bool _abaDescobrir = false;
 
   @override
   void dispose() {
@@ -40,8 +29,6 @@ class _RotinasScreenState extends State<RotinasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final rotinas = _abaDescobrir ? _rotinasDescobrir : _minhasRotinas;
-
     return Scaffold(
       backgroundColor: kWhite,
       body: Column(
@@ -57,7 +44,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                   const SizedBox(height: 12),
                   _buildTabs(),
                   const SizedBox(height: 16),
-                  Expanded(child: _buildRotinasList(rotinas, _abaDescobrir)),
+                  Expanded(child: _buildRotinasList(_abaDescobrir)),
                 ],
               ),
             ),
@@ -156,51 +143,73 @@ class _RotinasScreenState extends State<RotinasScreen> {
     );
   }
 
-  Widget _buildRotinasList(List<Workout> rotinas, bool isDescobrir) {
-    return ListView.separated(
-      itemCount: rotinas.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final rotina = rotinas[index];
-        return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => WorkoutDetailScreen(workout: rotina),
-            ),
-          ),
-          child: _RotinaCard(
-            categoria: rotina.subtitle,
-            nome: rotina.title,
-            autor: 'por FitGroup',
-            onEdit: () => _editRotina(index, isDescobrir),
-            onDelete: () => _confirmDeleteRotina(index, isDescobrir),
-          ),
+  Widget _buildRotinasList(bool isDescobrir) {
+    final query = isDescobrir
+        ? FirebaseFirestore.instance.collection('rotinas')
+        : FirebaseFirestore.instance
+            .collection('rotinas')
+            .where('autorId', isEqualTo: 'teste123');
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('Nenhuma rotina encontrada.'));
+        }
+
+        final docs = snapshot.data!.docs;
+
+        return ListView.separated(
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
+            final id = docs[index].id;
+
+            final rotina = Workout(
+              title: data['nome'] ?? '',
+              subtitle: data['categoria'] ?? '',
+              estimatedMinutes: data['estimatedMinutes'] ?? 0,
+              exercises: (data['exercicios'] as List<dynamic>? ?? [])
+                  .map((e) => Exercise(
+                        name: e['nome'] ?? '',
+                        series: e['series'] ?? 3,
+                        reps: e['reps'] ?? 10,
+                        weight: (e['peso'] ?? 0).toDouble(),
+                      ))
+                  .toList(),
+            );
+
+            return GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WorkoutDetailScreen(workout: rotina),
+                ),
+              ),
+              child: _RotinaCard(
+                categoria: data['categoria'] ?? '',
+                nome: data['nome'] ?? '',
+                autor: 'por ${data['autorNome'] ?? ''}',
+                onEdit: () => _editRotina(id, data),
+                onDelete: () => _confirmDeleteRotina(id, data['nome'] ?? ''),
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  Future<void> _editRotina(int index, bool isDescobrir) async {
-    final rotina = isDescobrir ? _rotinasDescobrir[index] : _minhasRotinas[index];
-    final edited = await _showEditWorkoutDialog(rotina);
-    if (edited != null) {
-      setState(() {
-        if (isDescobrir) {
-          _rotinasDescobrir[index] = edited;
-        } else {
-          _minhasRotinas[index] = edited;
-        }
-      });
-    }
-  }
-
-  Future<Workout?> _showEditWorkoutDialog(Workout rotina) async {
-    final titleController = TextEditingController(text: rotina.title);
-    final subtitleController = TextEditingController(text: rotina.subtitle);
+  Future<void> _editRotina(String id, Map<String, dynamic> data) async {
+    final titleController = TextEditingController(text: data['nome']);
+    final subtitleController = TextEditingController(text: data['categoria']);
     final formKey = GlobalKey<FormState>();
 
-    final edited = await showDialog<Workout>(
+    await showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -213,7 +222,8 @@ class _RotinasScreenState extends State<RotinasScreen> {
                 TextFormField(
                   controller: titleController,
                   decoration: const InputDecoration(labelText: 'Nome da rotina'),
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -229,16 +239,16 @@ class _RotinasScreenState extends State<RotinasScreen> {
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 if (formKey.currentState?.validate() ?? false) {
-                  Navigator.of(context).pop(
-                    Workout(
-                      title: titleController.text.trim(),
-                      subtitle: subtitleController.text.trim(),
-                      estimatedMinutes: rotina.estimatedMinutes,
-                      exercises: rotina.exercises,
-                    ),
-                  );
+                  await FirebaseFirestore.instance
+                      .collection('rotinas')
+                      .doc(id)
+                      .update({
+                    'nome': titleController.text.trim(),
+                    'categoria': subtitleController.text.trim(),
+                  });
+                  if (context.mounted) Navigator.of(context).pop();
                 }
               },
               child: const Text('Salvar'),
@@ -250,17 +260,15 @@ class _RotinasScreenState extends State<RotinasScreen> {
 
     titleController.dispose();
     subtitleController.dispose();
-    return edited;
   }
 
-  Future<void> _confirmDeleteRotina(int index, bool isDescobrir) async {
-    final rotina = isDescobrir ? _rotinasDescobrir[index] : _minhasRotinas[index];
+  Future<void> _confirmDeleteRotina(String id, String nome) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Excluir rotina'),
-          content: Text('Deseja excluir "${rotina.title}"?'),
+          content: Text('Deseja excluir "$nome"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -276,16 +284,12 @@ class _RotinasScreenState extends State<RotinasScreen> {
     );
 
     if (confirmed == true) {
-      setState(() {
-        if (isDescobrir) {
-          _rotinasDescobrir.removeAt(index);
-        } else {
-          _minhasRotinas.removeAt(index);
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rotina "${rotina.title}" excluída.')),
-      );
+      await FirebaseFirestore.instance.collection('rotinas').doc(id).delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rotina "$nome" excluída.')),
+        );
+      }
     }
   }
 }

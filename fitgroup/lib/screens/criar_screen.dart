@@ -15,8 +15,11 @@ class _CriarScreenState extends State<CriarScreen> {
   final _categoriaController = TextEditingController();
   final _descricaoController = TextEditingController();
   final _exercicioController = TextEditingController();
+  final _seriesController = TextEditingController(text: '3');
+  final _repsController = TextEditingController(text: '10');
+  final _pesoController = TextEditingController(text: '0');
 
-  final List<String> _exercicios = [];
+  final List<Map<String, dynamic>> _exercicios = [];
 
   @override
   void dispose() {
@@ -24,6 +27,9 @@ class _CriarScreenState extends State<CriarScreen> {
     _categoriaController.dispose();
     _descricaoController.dispose();
     _exercicioController.dispose();
+    _seriesController.dispose();
+    _repsController.dispose();
+    _pesoController.dispose();
     super.dispose();
   }
 
@@ -31,26 +37,34 @@ class _CriarScreenState extends State<CriarScreen> {
     final texto = _exercicioController.text.trim();
     if (texto.isNotEmpty) {
       setState(() {
-        _exercicios.add(texto);
+        _exercicios.add({
+          'nome': texto,
+          'series': int.tryParse(_seriesController.text) ?? 3,
+          'reps': int.tryParse(_repsController.text) ?? 10,
+          'peso': double.tryParse(_pesoController.text) ?? 0,
+        });
         _exercicioController.clear();
+        _seriesController.text = '3';
+        _repsController.text = '10';
+        _pesoController.text = '0';
       });
     }
   }
 
   Future<void> _salvar() async {
-  if (_formKey.currentState?.validate() ?? false) {
-    await FirebaseFirestore.instance.collection('rotinas').add({
-      'nome': _nomeController.text.trim(),
-      'categoria': _categoriaController.text.trim(),
-      'descricao': _descricaoController.text.trim(),
-      'exercicios': _exercicios,
-      'autorNome': 'João',
-      'autorId': 'teste123',
-    });
+    if (_formKey.currentState?.validate() ?? false) {
+      await FirebaseFirestore.instance.collection('rotinas').add({
+        'nome': _nomeController.text.trim(),
+        'categoria': _categoriaController.text.trim(),
+        'descricao': _descricaoController.text.trim(),
+        'exercicios': _exercicios,
+        'autorNome': 'João',
+        'autorId': 'teste123',
+      });
 
-    if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
+    }
   }
-}
 
   void _cancelar() {
     Navigator.pop(context);
@@ -199,45 +213,74 @@ class _CriarScreenState extends State<CriarScreen> {
           ),
         ),
         const SizedBox(height: 8),
+        TextFormField(
+          controller: _exercicioController,
+          style: const TextStyle(fontSize: 14, color: kTextDark),
+          decoration: InputDecoration(
+            hintText: 'nome do exercício',
+            hintStyle: TextStyle(color: kTextGrey, fontSize: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: kBorderGrey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: kDarkNavy, width: 1.5),
+            ),
+            filled: true,
+            fillColor: kWhite,
+          ),
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(
-              child: TextFormField(
-                controller: _exercicioController,
-                style: const TextStyle(fontSize: 14, color: kTextDark),
-                onFieldSubmitted: (_) => _adicionarExercicio(),
-                decoration: InputDecoration(
-                  hintText: 'adicionar exercício',
-                  hintStyle: TextStyle(color: kTextGrey, fontSize: 14),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: kBorderGrey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: kDarkNavy, width: 1.5),
-                  ),
-                  filled: true,
-                  fillColor: kWhite,
-                  suffixIcon: GestureDetector(
-                    onTap: _adicionarExercicio,
-                    child: Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: kDarkNavy,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(Icons.add, color: kWhite, size: 18),
-                    ),
-                  ),
+            Expanded(child: _buildSmallField('Séries', _seriesController)),
+            const SizedBox(width: 8),
+            Expanded(child: _buildSmallField('Reps', _repsController)),
+            const SizedBox(width: 8),
+            Expanded(child: _buildSmallField('Peso (kg)', _pesoController)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _adicionarExercicio,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: kDarkNavy,
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: const Icon(Icons.add, color: kWhite, size: 20),
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSmallField(String hint, TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: const TextStyle(fontSize: 14, color: kTextDark),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: kTextGrey, fontSize: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: kBorderGrey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: kDarkNavy, width: 1.5),
+        ),
+        filled: true,
+        fillColor: kWhite,
+      ),
     );
   }
 
@@ -258,22 +301,19 @@ class _CriarScreenState extends State<CriarScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.fitness_center,
-                      size: 16, color: kTextGrey),
+                  const Icon(Icons.fitness_center, size: 16, color: kTextGrey),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      entry.value,
-                      style: const TextStyle(
-                          fontSize: 14, color: kTextDark),
+                      '${entry.value['nome']} · ${entry.value['series']}x${entry.value['reps']} · ${entry.value['peso']}kg',
+                      style: const TextStyle(fontSize: 14, color: kTextDark),
                     ),
                   ),
                   GestureDetector(
                     onTap: () {
                       setState(() => _exercicios.removeAt(entry.key));
                     },
-                    child:
-                        const Icon(Icons.close, size: 16, color: kTextGrey),
+                    child: const Icon(Icons.close, size: 16, color: kTextGrey),
                   ),
                 ],
               ),

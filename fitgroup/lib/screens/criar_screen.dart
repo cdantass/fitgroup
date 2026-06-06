@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'rotinas_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CriarScreen extends StatefulWidget {
   const CriarScreen({super.key});
@@ -36,11 +37,20 @@ class _CriarScreenState extends State<CriarScreen> {
     }
   }
 
-  void _salvar() {
-    if (_formKey.currentState?.validate() ?? false) {
-      Navigator.pop(context);
-    }
+  Future<void> _salvar() async {
+  if (_formKey.currentState?.validate() ?? false) {
+    await FirebaseFirestore.instance.collection('rotinas').add({
+      'nome': _nomeController.text.trim(),
+      'categoria': _categoriaController.text.trim(),
+      'descricao': _descricaoController.text.trim(),
+      'exercicios': _exercicios,
+      'autorNome': 'João',
+      'autorId': 'teste123',
+    });
+
+    if (mounted) Navigator.pop(context);
   }
+}
 
   void _cancelar() {
     Navigator.pop(context);

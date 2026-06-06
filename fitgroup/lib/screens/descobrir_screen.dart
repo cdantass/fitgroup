@@ -126,10 +126,117 @@ class _DescobrirScreenState extends State<DescobrirScreen> {
           categoria: rotina['categoria']!,
           nome: rotina['nome']!,
           autor: rotina['autor']!,
+          onEdit: () => _editRotina(index),
+          onDelete: () => _confirmDeleteRotina(index),
         );
       },
     );
   }
+
+  Future<void> _editRotina(int index) async {
+    final rotina = _rotinas[index];
+    final edited = await _showEditRotinaDialog(rotina);
+    if (edited != null) {
+      setState(() {
+        _rotinas[index] = edited;
+      });
+    }
+  }
+
+  Future<Map<String, String>?> _showEditRotinaDialog(Map<String, String> rotina) async {
+    final categoriaController = TextEditingController(text: rotina['categoria']);
+    final nomeController = TextEditingController(text: rotina['nome']);
+    final autorController = TextEditingController(text: rotina['autor']);
+    final formKey = GlobalKey<FormState>();
+
+    final edited = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Editar rotina'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(labelText: 'Nome da rotina'),
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: categoriaController,
+                  decoration: const InputDecoration(labelText: 'Categoria'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: autorController,
+                  decoration: const InputDecoration(labelText: 'Autor'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.of(context).pop({
+                    'categoria': categoriaController.text.trim(),
+                    'nome': nomeController.text.trim(),
+                    'autor': autorController.text.trim(),
+                  });
+                }
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    categoriaController.dispose();
+    nomeController.dispose();
+    autorController.dispose();
+    return edited;
+  }
+
+  Future<void> _confirmDeleteRotina(int index) async {
+    final rotina = _rotinas[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Excluir rotina'),
+          content: Text('Deseja excluir "${rotina['nome']}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _rotinas.removeAt(index);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Rotina "${rotina['nome']}" excluída.')),
+      );
+    }
+  }
+}
 
   Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
@@ -141,7 +248,7 @@ class _DescobrirScreenState extends State<DescobrirScreen> {
       child: const Icon(Icons.add, color: kWhite, size: 28),
     );
   }
-}
+
 
 
 class _FitgroupLogo extends StatelessWidget {
@@ -273,11 +380,15 @@ class _RotinaCard extends StatelessWidget {
   final String categoria;
   final String nome;
   final String autor;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _RotinaCard({
     required this.categoria,
     required this.nome,
     required this.autor,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -324,7 +435,20 @@ class _RotinaCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.more_vert, color: kTextGrey, size: 20),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: kTextGrey, size: 20),
+            onSelected: (value) {
+              if (value == 'edit') {
+                onEdit?.call();
+              } else if (value == 'delete') {
+                onDelete?.call();
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Editar')),
+              const PopupMenuItem(value: 'delete', child: Text('Excluir')),
+            ],
+          ),
         ],
       ),
     );

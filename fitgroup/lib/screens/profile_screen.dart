@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,6 +11,23 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool notificationsOn = true;
+
+  User? get _currentUser => FirebaseAuth.instance.currentUser;
+
+  String get _firstName {
+  final user = _currentUser;
+  if (user == null) return 'Usuário';
+
+  if (user.displayName != null && user.displayName!.isNotEmpty) {
+    return user.displayName!.split(' ').first;
+  }
+
+  final emailPrefix = user.email?.split('@').first ?? 'usuário';
+  final firstName = emailPrefix.replaceAll('.', ' ').split(' ').first;
+  return firstName[0].toUpperCase() + firstName.substring(1);
+}
+
+  String get _email => _currentUser?.email ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +43,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: _boxDecoration(),
-                  child: const Row(
+                  child: Row(
                     children: [
                       CircleAvatar(
                         radius: 24,
-                        backgroundColor: Color(0xFFE5E7EB),
-                        child: Icon(Icons.person_outline, color: Colors.grey),
+                        backgroundColor: const Color(0xFFE5E7EB),
+                        backgroundImage: _currentUser?.photoURL != null
+                            ? NetworkImage(_currentUser!.photoURL!)
+                            : null,
+                        child: _currentUser?.photoURL == null
+                            ? const Icon(Icons.person_outline, color: Colors.grey)
+                            : null,
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Admin',
-                            style: TextStyle(
+                            _firstName,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1A1A2E),
                             ),
                           ),
                           Text(
-                            'admin@admin.com',
-                            style: TextStyle(color: Colors.grey),
+                            _email,
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -62,40 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 2.3,
-                  children: const [
-                    StatBox(
-                      title: '48',
-                      subtitle: 'Treinos',
-                      icon: Icons.fitness_center_rounded,
-                      iconColor: Color(0xFF5B4DB1),
-                    ),
-                    StatBox(
-                      title: '45.5k',
-                      subtitle: 'Calorias',
-                      icon: Icons.local_fire_department_rounded,
-                      iconColor: Color(0xFFE25757),
-                    ),
-                    StatBox(
-                      title: '7',
-                      subtitle: 'Recordes',
-                      icon: Icons.show_chart_rounded,
-                      iconColor: Color(0xFF6A4FB3),
-                    ),
-                    StatBox(
-                      title: '14 dias',
-                      subtitle: 'Sequência',
-                      icon: Icons.emoji_events_rounded,
-                      iconColor: Color(0xFFD0A13B),
-                    ),
-                  ],
-                ),
+                _buildStats(),
                 const SizedBox(height: 24),
                 const Text(
                   'Configurações',
@@ -148,12 +139,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                      if (context.mounted) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (route) => false,
+                        );
+                      }
                     },
                     child: const Text(
                       'Sair',
@@ -170,6 +164,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildStats() {
+    final uid = _currentUser?.uid;
+    if (uid == null) {
+      return _statsGrid(treinos: 0, calorias: 0, recordes: 0, sequencia: 0);
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(
+                color: Color(0xFF5B4DB1),
+              ),
+            ),
+          );
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+
+        return _statsGrid(
+          treinos: (data['treinos'] ?? 0) as num,
+          calorias: (data['calorias'] ?? 0) as num,
+          recordes: (data['recordes'] ?? 0) as num,
+          sequencia: (data['sequencia'] ?? 0) as num,
+        );
+      },
+    );
+  }
+
+  Widget _statsGrid({
+    required num treinos,
+    required num calorias,
+    required num recordes,
+    required num sequencia,
+  }) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.3,
+      children: [
+        StatBox(
+          title: '$treinos',
+          subtitle: 'Treinos',
+          icon: Icons.fitness_center_rounded,
+          iconColor: const Color(0xFF5B4DB1),
+        ),
+        StatBox(
+          title: _formatCalorias(calorias),
+          subtitle: 'Calorias',
+          icon: Icons.local_fire_department_rounded,
+          iconColor: const Color(0xFFE25757),
+        ),
+        StatBox(
+          title: '$recordes',
+          subtitle: 'Recordes',
+          icon: Icons.show_chart_rounded,
+          iconColor: const Color(0xFF6A4FB3),
+        ),
+        StatBox(
+          title: '$sequencia dias',
+          subtitle: 'Sequência',
+          icon: Icons.emoji_events_rounded,
+          iconColor: const Color(0xFFD0A13B),
+        ),
+      ],
+    );
+  }
+
+  String _formatCalorias(num calorias) {
+    if (calorias >= 1000) {
+      return '${(calorias / 1000).toStringAsFixed(1)}k';
+    }
+    return '$calorias';
   }
 
   Widget _buildHeader(BuildContext context) {

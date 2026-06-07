@@ -16,7 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _isLoading = false;
- 
 
   @override
   void dispose() {
@@ -31,9 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-      if (googleUser == null) {
-        return;
-      }
+      if (googleUser == null) return;
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
@@ -43,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-
       final userEmail = userCredential.user?.email ?? '';
 
       if (!userEmail.toLowerCase().endsWith('@souunit.com.br')) {
@@ -56,7 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
             barrierDismissible: false,
             builder: (context) => AlertDialog(
               title: const Text('Acesso restrito'),
-              content: const Text('Use seu e-mail institucional @souunit.com.br para entrar. Se acha que isto é um erro, contate o suporte.'),
+              content: const Text(
+                  'Use seu e-mail institucional @souunit.com.br para entrar. Se acha que isto é um erro, contate o suporte.'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -66,21 +63,65 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
-
         return;
       }
 
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-          (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Erro ao autenticar com Google')),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loginWithEmail() async {
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha email e senha')),
+      );
+      return;
+    }
+
+    if (!email.toLowerCase().endsWith('@souunit.com.br')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use seu e-mail institucional @souunit.com.br para entrar.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'user-not-found') {
+        message = 'Usuário não encontrado.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Senha incorreta.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Email inválido.';
+      } else if (e.code == 'user-disabled') {
+        message = 'Conta desabilitada.';
+      } else {
+        message = e.message ?? 'Erro ao autenticar.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
     } finally {
@@ -111,26 +152,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(
-                    Icons.login,
-                    size: 20,
-                  ),
-                  label: const Text('Entrar com Google'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: _isLoading ? null : _signInWithGoogle,
-                ),
-              ),
-            ),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -148,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _emailCtrl,
                       decoration: const InputDecoration(
-                        hintText: 'lazaro@email.com',
+                        hintText: 'lazaro@souunit.com.br',
                         isDense: true,
                       ),
                       keyboardType: TextInputType.emailAddress,
@@ -187,73 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: _isLoading
-                          ? null
-                          : () async {
-                                final email = _emailCtrl.text.trim();
-                                final password = _passCtrl.text;
-
-                                if (email.isEmpty || password.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Preencha email e senha')),
-                                  );
-                                  return;
-                                }
-
-                                setState(() => _isLoading = true);
-                                try {
-                                  final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-
-                                  final userEmail = cred.user?.email ?? '';
-                                  if (!userEmail.toLowerCase().endsWith('@souunit.com.br')) {
-                                    // logout immediately (do not permanently block UI)
-                                    await FirebaseAuth.instance.signOut();
-                                    await showDialog<void>(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Acesso restrito'),
-                                        content: const Text(
-                                            'Use seu e-mail institucional @souunit.com.br para entrar. Se acha que isto é um erro, contate o suporte.'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.of(context).pop(),
-                                            child: const Text('OK'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    '/home',
-                                    (route) => false,
-                                  );
-                                } on FirebaseAuthException catch (e) {
-                                  String message;
-                                  if (e.code == 'user-not-found') {
-                                    message = 'Usuário não encontrado.';
-                                  } else if (e.code == 'wrong-password') {
-                                    message = 'Senha incorreta.';
-                                  } else if (e.code == 'invalid-email') {
-                                    message = 'Email inválido.';
-                                  } else if (e.code == 'user-disabled') {
-                                    message = 'Conta desabilitada.';
-                                  } else {
-                                    message = e.message ?? 'Erro ao autenticar.';
-                                  }
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
-                                } finally {
-                                  if (mounted) setState(() => _isLoading = false);
-                                }
-                              },
+                        onPressed: _isLoading ? null : _loginWithEmail,
                         child: _isLoading
                             ? const SizedBox(
                                 height: 16,
@@ -264,6 +219,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text('LOGIN'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.login, size: 20),
+                        label: const Text('Entrar com Google'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _signInWithGoogle,
                       ),
                     ),
                     const Spacer(),
@@ -283,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text('Registre-se'),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/group.dart';
 import '../models/chat_message.dart';
 import '../theme/app_theme.dart';
@@ -94,13 +95,25 @@ class GroupState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void createGroup({
+  Future<void> createGroup({
     required String name,
     required String description,
     required Color color,
-  }) {
+    required String userEmail,
+  }) async {
+    final groupId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    await FirebaseFirestore.instance.collection('groups').doc(groupId).set({
+      'nome': name,
+      'descrricao': description,
+      'usuarios': [userEmail],
+      'admin': [userEmail],
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
     _groups.add(Group(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: groupId,
       name: name,
       description: description,
       color: color,
@@ -111,11 +124,30 @@ class GroupState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateGroup(String id, {String? name, String? description, Color? color}) {
+  Future<void> updateGroup(
+    String id, {
+    String? name,
+    String? description,
+    Color? color,
+    required String userEmail,
+  }) async {
     final g = _groups.firstWhere((g) => g.id == id);
-    if (name != null) g.name = name;
-    if (description != null) g.description = description;
-    if (color != null) g.color = color;
+
+    final updatedName = name ?? g.name;
+    final updatedDescription = description ?? g.description;
+    final updatedColor = color ?? g.color;
+
+    await FirebaseFirestore.instance.collection('groupos').doc(id).set({
+      'nome': updatedName,
+      'descrricao': updatedDescription,
+      'usuarios': [userEmail],
+      'admin': [userEmail],
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    g.name = updatedName;
+    g.description = updatedDescription;
+    g.color = updatedColor;
     notifyListeners();
   }
 

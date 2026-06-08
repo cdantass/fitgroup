@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-// import 'create_group_screen.dart';
+import 'create_group_screen.dart';
 import 'group_chat_screen.dart';
 import 'group_editor_screen.dart';
 
@@ -280,7 +280,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   void _openCreate() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const GroupEditorScreen()));
+        context, MaterialPageRoute(builder: (_) => const CreateGroupScreen()));
   }
 }
 

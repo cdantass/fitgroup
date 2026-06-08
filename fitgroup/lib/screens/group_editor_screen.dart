@@ -1,4 +1,5 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/group.dart';
 import '../state/group_state.dart';
@@ -18,6 +19,7 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _memberSearchController;
   late final bool _isEditing;
+  bool _isSaving = false;
 
   late final List<_GroupMember> _members = [
     const _GroupMember(name: 'Cauã', isAdmin: true),
@@ -43,6 +45,62 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
     _descriptionController.dispose();
     _memberSearchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveGroup() async {
+    final name = _groupNameController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe o nome do grupo.')),
+      );
+      return;
+    }
+
+    final userEmail = FirebaseAuth.instance.currentUser?.email;
+    if (userEmail == null || userEmail.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Faça login para salvar o grupo.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      if (_isEditing && widget.group != null) {
+        await GroupState.instance.updateGroup(
+          widget.group!.id,
+          name: name,
+          description: description,
+          color: widget.group!.color,
+          userEmail: userEmail,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Grupo atualizado com sucesso.')),
+        );
+      } else {
+        await GroupState.instance.createGroup(
+          name: name,
+          description: description,
+          color: widget.group?.color ?? AppTheme.purple,
+          userEmail: userEmail,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Grupo criado com sucesso.')),
+        );
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   void _addMember() {
@@ -214,40 +272,8 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
                                 borderRadius: BorderRadius.circular(18),
                               ),
                             ),
-                            onPressed: () {
-                              final name = _groupNameController.text.trim();
-                              final description = _descriptionController.text.trim();
-                              if (name.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Informe o nome do grupo.')),
-                                );
-                                return;
-                              }
-
-                              if (_isEditing && widget.group != null) {
-                                GroupState.instance.updateGroup(
-                                  widget.group!.id,
-                                  name: name,
-                                  description: description,
-                                  color: widget.group!.color,
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Grupo atualizado com sucesso.')),
-                                );
-                              } else {
-                                GroupState.instance.createGroup(
-                                  name: name,
-                                  description: description,
-                                  color: widget.group?.color ?? AppTheme.purple,
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Grupo criado com sucesso.')),
-                                );
-                              }
-
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Salvar grupo'),
+                            onPressed: _isSaving ? null : _saveGroup,
+                            child: Text(_isSaving ? 'Salvando...' : 'Salvar grupo'),
                           ),
                         ),
                       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
@@ -16,6 +17,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _descCtrl;
   late Color _color;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.group != null;
 
@@ -34,7 +36,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     if (name.isEmpty) {
@@ -42,13 +44,51 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           .showSnackBar(const SnackBar(content: Text('Nome obrigatório')));
       return;
     }
-    if (_isEditing) {
-      GroupState.instance
-          .updateGroup(widget.group!.id, name: name, description: desc, color: _color);
-    } else {
-      GroupState.instance.createGroup(name: name, description: desc, color: _color);
+
+    final userEmail = FirebaseAuth.instance.currentUser?.email;
+    if (userEmail == null || userEmail.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Faça login para criar ou editar um grupo.')),
+      );
+      return;
     }
-    Navigator.pop(context);
+
+    setState(() => _isSaving = true);
+    try {
+      if (_isEditing) {
+        await GroupState.instance.updateGroup(
+          widget.group!.id,
+          name: name,
+          description: desc,
+          color: _color,
+          userEmail: userEmail,
+        );
+      } else {
+        await GroupState.instance.createGroup(
+          name: name,
+          description: desc,
+          color: _color,
+          userEmail: userEmail,
+        );
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isEditing ? 'Grupo atualizado com sucesso.' : 'Grupo criado com sucesso.'),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível salvar o grupo: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -106,7 +146,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
-                  _isEditing ? 'Salvar alterações' : 'Criar grupo',
+                  _isSaving
+                      ? 'Salvando...'
+                      : (_isEditing ? 'Salvar alterações' : 'Criar grupo'),
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                 ),
               ),

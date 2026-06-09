@@ -6,12 +6,14 @@ class WorkoutCard extends StatelessWidget {
   final Workout workout;
   final VoidCallback onTap;
   final Function(int) onExerciseToggle;
+  final VoidCallback? onDelete;
 
   const WorkoutCard({
     super.key,
     required this.workout,
     required this.onTap,
     required this.onExerciseToggle,
+    this.onDelete,
   });
 
   @override
@@ -84,8 +86,32 @@ class WorkoutCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.more_vert_rounded,
-                          color: Colors.white.withOpacity(0.5), size: 20),
+                      if (onDelete != null)
+                        PopupMenuButton(
+                          onSelected: (value) {
+                            if (value == 'delete') {
+                              onDelete?.call();
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline,
+                                      color: Colors.red, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Deletar'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          child: Icon(Icons.more_vert_rounded,
+                              color: Colors.white.withOpacity(0.5), size: 20),
+                        )
+                      else
+                        Icon(Icons.more_vert_rounded,
+                            color: Colors.white.withOpacity(0.5), size: 20),
                     ],
                   ),
                 ],

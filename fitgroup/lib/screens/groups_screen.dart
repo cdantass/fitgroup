@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-import 'create_group_screen.dart';
 import 'group_chat_screen.dart';
 import 'group_editor_screen.dart';
 
@@ -212,11 +212,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryDark,
                 foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.joinGroup(group.id);
+            onPressed: () async {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid != null) {
+                await GroupState.instance.joinGroup(group.id, uid);
+              }
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Você entrou em ${group.name}!')));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Você entrou em ${group.name}!')));
+              }
             },
             child: const Text('Entrar'),
           ),
@@ -240,9 +245,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.leaveGroup(group.id);
-              Navigator.pop(ctx);
+            onPressed: () async {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid != null) {
+                await GroupState.instance.leaveGroup(group.id, uid);
+              }
+              Navigator.pop(context);
             },
             child: const Text('Sair'),
           ),
@@ -267,9 +275,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.deleteGroup(group.id);
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await GroupState.instance.deleteGroup(group.id);
+              Navigator.pop(context);
             },
             child: const Text('Excluir'),
           ),
@@ -280,7 +288,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   void _openCreate() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const CreateGroupScreen()));
+        context, MaterialPageRoute(builder: (_) => const GroupEditorScreen()));
   }
 }
 

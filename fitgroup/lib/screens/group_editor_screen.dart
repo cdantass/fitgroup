@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/group.dart';
 import '../state/group_state.dart';
@@ -21,11 +22,9 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
   late final bool _isEditing;
   bool _isSaving = false;
 
-  late final List<_GroupMember> _members = [
-    const _GroupMember(name: 'Cauã', isAdmin: true),
-    const _GroupMember(name: 'Marcel', isAdmin: false),
-    const _GroupMember(name: 'Thiago', isAdmin: false),
-  ];
+  final List<_GroupMember> _members = [];
+  List<_SearchResult> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -33,10 +32,37 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
     _isEditing = widget.group != null;
     _groupNameController = TextEditingController(text: widget.group?.name ?? '');
     _descriptionController = TextEditingController(
-      text: widget.group?.description ??
-          'Grupo para combinar treinos, organizar membros e acompanhar a evolução.',
+      text: widget.group?.description ?? '',
     );
     _memberSearchController = TextEditingController();
+
+    if (_isEditing && widget.group != null) {
+      _loadGroupMembers(widget.group!.id);
+    }
+  }
+
+  Future<void> _loadGroupMembers(String groupId) async {
+    final data = await GroupState.instance.getGroupData(groupId);
+    if (data == null || !mounted) return;
+
+    final usuarioRefs = (data['usuarios'] as List?)?.cast<DocumentReference>() ?? [];
+    final adminRefs = (data['admin'] as List?)?.cast<DocumentReference>() ?? [];
+    final adminIds = adminRefs.map((ref) => ref.id).toSet();
+
+    for (final ref in usuarioRefs) {
+      try {
+        final userDoc = await ref.get();
+        final userData = userDoc.data() as Map<String, dynamic>?;
+        if (userData != null) {
+          _members.add(_GroupMember(
+            uid: ref.id,
+            name: userData['nome'] as String? ?? 'Usuário',
+            isAdmin: adminIds.contains(ref.id),
+          ));
+        }
+      } catch (_) {}
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -45,6 +71,44 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
     _descriptionController.dispose();
     _memberSearchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchUsers(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('nome', isGreaterThanOrEqualTo: query)
+          .where('nome', isLessThanOrEqualTo: query + '\uf8ff')
+          .get();
+
+      final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final memberUids = _members.map((m) => m.uid).toSet();
+
+      _searchResults = snapshot.docs
+          .where((doc) => doc.id != currentUid && !memberUids.contains(doc.id))
+          .map((doc) {
+            final data = doc.data();
+            return _SearchResult(
+              uid: doc.id,
+              name: data['nome'] as String? ?? 'Usuário',
+            );
+          })
+          .toList();
+    } catch (_) {
+      _searchResults = [];
+    }
+
+    if (mounted) setState(() => _isSearching = false);
   }
 
   Future<void> _saveGroup() async {
@@ -58,8 +122,8 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
       return;
     }
 
-    final userEmail = FirebaseAuth.instance.currentUser?.email;
-    if (userEmail == null || userEmail.isEmpty) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Faça login para salvar o grupo.')),
       );
@@ -68,24 +132,31 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
 
     setState(() => _isSaving = true);
     try {
+      final memberUids = _members.map((m) => m.uid).toList();
+      final adminUids = _members.where((m) => m.isAdmin).map((m) => m.uid).toList();
+
       if (_isEditing && widget.group != null) {
         await GroupState.instance.updateGroup(
           widget.group!.id,
           name: name,
           description: description,
           color: widget.group!.color,
-          userEmail: userEmail,
+          memberUids: [user.uid, ...memberUids],
+          adminUids: [user.uid, ...adminUids],
         );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Grupo atualizado com sucesso.')),
         );
       } else {
+        final randomColor = kGroupColors[DateTime.now().millisecondsSinceEpoch % kGroupColors.length];
         await GroupState.instance.createGroup(
           name: name,
           description: description,
-          color: widget.group?.color ?? AppTheme.purple,
-          userEmail: userEmail,
+          color: randomColor,
+          userUid: user.uid,
+          memberUids: memberUids,
+          adminUids: adminUids,
         );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,22 +174,10 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
     }
   }
 
-  void _addMember() {
-    final name = _memberSearchController.text.trim();
-    if (name.isEmpty) {
-      return;
-    }
-
-    final exists = _members.any((member) => member.name.toLowerCase() == name.toLowerCase());
-    if (exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esse membro já está adicionado.')),
-      );
-      return;
-    }
-
+  void _addMember(_SearchResult result) {
     setState(() {
-      _members.add(_GroupMember(name: name));
+      _members.add(_GroupMember(uid: result.uid, name: result.name));
+      _searchResults.remove(result);
       _memberSearchController.clear();
     });
   }
@@ -180,68 +239,130 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
                     const SizedBox(height: 16),
                     _buildSectionCard(
                       title: 'Adicionar membros',
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _memberSearchController,
-                              decoration: _inputDecoration('Pesquisar contato'),
-                              textInputAction: TextInputAction.done,
-                              onSubmitted: (_) => _addMember(),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: _addMember,
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryDark,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSectionCard(
-                      title: 'Permissões e membros',
                       child: Column(
                         children: [
                           Row(
                             children: [
-                              _LegendPill(
-                                icon: Icons.star_rounded,
-                                label: 'Admin',
-                                color: AppTheme.primaryDark,
+                              Expanded(
+                                child: TextField(
+                                  controller: _memberSearchController,
+                                  decoration: _inputDecoration('Pesquisar usuário'),
+                                  textInputAction: TextInputAction.done,
+                                  onChanged: _searchUsers,
+                                ),
                               ),
                               const SizedBox(width: 10),
-                              _LegendPill(
-                                icon: Icons.person_outline_rounded,
-                                label: 'Membro',
-                                color: const Color(0xFF94A3B8),
+                              GestureDetector(
+                                onTap: () => _searchUsers(_memberSearchController.text),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryDark,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: _isSearching
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(Icons.search_rounded, color: Colors.white, size: 24),
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          ...List.generate(_members.length, (index) {
-                            final member = _members[index];
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: index == _members.length - 1 ? 0 : 12),
-                              child: _MemberTile(
-                                member: member,
-                                onTap: () => _showMemberActions(index),
-                                onToggleAdmin: () => _toggleAdmin(index),
-                                onRemove: () => _removeMember(index),
+                          if (_isSearching)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 12),
+                              child: LinearProgressIndicator(),
+                            ),
+                          if (_searchResults.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
-                            );
-                          }),
+                              child: Column(
+                                children: _searchResults.map((result) {
+                                  return InkWell(
+                                    onTap: () => _addMember(result),
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      child: Row(
+                                        children: [
+                                          const CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: Color(0xFFE2E8F0),
+                                            child: Icon(Icons.person_rounded, size: 16, color: Color(0xFF475569)),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              result.name,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(Icons.add_circle_outline_rounded,
+                                              size: 20, color: AppTheme.primaryDark),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    if (_members.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildSectionCard(
+                        title: 'Permissões e membros',
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _LegendPill(
+                                  icon: Icons.star_rounded,
+                                  label: 'Admin',
+                                  color: AppTheme.primaryDark,
+                                ),
+                                const SizedBox(width: 10),
+                                _LegendPill(
+                                  icon: Icons.person_outline_rounded,
+                                  label: 'Membro',
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            ...List.generate(_members.length, (index) {
+                              final member = _members[index];
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: index == _members.length - 1 ? 0 : 12),
+                                child: _MemberTile(
+                                  member: member,
+                                  onTap: () => _showMemberActions(index),
+                                  onToggleAdmin: () => _toggleAdmin(index),
+                                  onRemove: () => _removeMember(index),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 18),
                     Row(
                       children: [
@@ -308,10 +429,6 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
             ),
           ),
           const Spacer(),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Ajuda'),
-          ),
         ],
       ),
     );
@@ -490,14 +607,23 @@ class _GroupEditorScreenState extends State<GroupEditorScreen> {
   }
 }
 
+class _SearchResult {
+  final String uid;
+  final String name;
+
+  const _SearchResult({required this.uid, required this.name});
+}
+
 class _GroupMember {
+  final String uid;
   final String name;
   final bool isAdmin;
 
-  const _GroupMember({required this.name, this.isAdmin = false});
+  const _GroupMember({required this.uid, required this.name, this.isAdmin = false});
 
-  _GroupMember copyWith({String? name, bool? isAdmin}) {
+  _GroupMember copyWith({String? uid, String? name, bool? isAdmin}) {
     return _GroupMember(
+      uid: uid ?? this.uid,
       name: name ?? this.name,
       isAdmin: isAdmin ?? this.isAdmin,
     );

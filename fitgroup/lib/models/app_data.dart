@@ -1,20 +1,3 @@
-import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-
-class FitGroup {
-  final String name;
-  final Color color;
-  final int members;
-  final String emoji;
-
-  const FitGroup({
-    required this.name,
-    required this.color,
-    required this.members,
-    required this.emoji,
-  });
-}
-
 class Exercise {
   final String name;
   int series;
@@ -60,13 +43,6 @@ class Workout {
 }
 
 class AppData {
-  static List<FitGroup> groups = [
-    FitGroup(name: 'Grupo fitness', color: AppTheme.purple, members: 12, emoji: '💪'),
-    FitGroup(name: 'Grupo de nutrição', color: AppTheme.amber, members: 8, emoji: '🥗'),
-    FitGroup(name: 'Grupo de saúde', color: AppTheme.coral, members: 15, emoji: '❤️'),
-    FitGroup(name: 'Yoga & Zen', color: AppTheme.teal, members: 6, emoji: '🧘'),
-  ];
-
   static List<Workout> workouts = [
     Workout(
       title: 'Full body iniciante',

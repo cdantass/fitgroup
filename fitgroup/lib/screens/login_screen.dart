@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../services/user_service.dart';
+import '../state/group_state.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -71,6 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final user = userCredential.user;
         if (user != null) {
           await UserService().syncUserToFirestore(user, 'google');
+          await GroupState.instance.loadGroups(user.uid);
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao sincronizar usuário: $e')));
@@ -119,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           await UserService().syncUserToFirestore(user, 'email');
+          await GroupState.instance.loadGroups(user.uid);
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao sincronizar usuário: $e')));

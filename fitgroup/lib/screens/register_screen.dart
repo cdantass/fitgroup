@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
+import '../services/user_service.dart';
+import '../state/group_state.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -115,15 +117,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                                 setState(() => _isLoading = true);
                                 try {
-                                  await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                                  final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
                                     email: email,
                                     password: password,
                                   );
 
+                                  final user = credential.user;
+                                  if (user != null) {
+                                    await UserService().syncUserToFirestore(user, 'email');
+                                    await GroupState.instance.loadGroups(user.uid);
+                                  }
+
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Conta criada com sucesso')),
                                   );
-                                  Navigator.pop(context);
+                                  Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                                 } on FirebaseAuthException catch (e) {
                                   String message;
                                   if (e.code == 'weak-password') {

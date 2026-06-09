@@ -1,26 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group.dart';
 import '../models/chat_message.dart';
-import '../theme/app_theme.dart';
 
 class GroupState extends ChangeNotifier {
   static final GroupState instance = GroupState._();
   GroupState._();
 
-  final Map<String, List<ChatMessage>> _chats = {
-    '1': [
-      ChatMessage(author: 'Cauã', text: 'Bom dia galera!', isMe: false, time: DateTime(2026, 5, 14, 9, 10)),
-      ChatMessage(author: 'Thiago', text: 'Bom dia! Treino hoje às 18h?', isMe: false, time: DateTime(2026, 5, 14, 9, 12)),
-    ],
-    '2': [
-      ChatMessage(author: 'Ana', text: 'Alguém tem receita fit para lanche?', isMe: false, time: DateTime(2026, 5, 15, 11, 0)),
-      ChatMessage(author: 'Você', text: 'Omelete com aveia é ótimo!', isMe: true, time: DateTime(2026, 5, 15, 11, 5)),
-    ],
-    '3': [
-      ChatMessage(author: 'Pedro', text: 'Praça confirmada pra amanhã', isMe: false, time: DateTime(2026, 5, 16, 8, 0)),
-    ],
-  };
+  final Map<String, List<ChatMessage>> _chats = {};
 
   List<ChatMessage> getMessages(String groupId) => _chats[groupId] ?? [];
 
@@ -30,94 +18,87 @@ class GroupState extends ChangeNotifier {
     notifyListeners();
   }
 
-  final List<Group> _groups = [
-    Group(
-      id: '1',
-      name: 'Grupo fitness',
-      description: 'grupo de treino da academia bemestar',
-      color: AppTheme.purple,
-      members: 12,
-      isJoined: true,
-      isOwner: false,
-    ),
-    Group(
-      id: '2',
-      name: 'Grupo de nutrição',
-      description: 'grupo focado em alimentação e nutrição',
-      color: AppTheme.amber,
-      members: 8,
-      isJoined: true,
-      isOwner: true,
-    ),
-    Group(
-      id: '3',
-      name: 'Grupo de Calistenia',
-      description: 'Todo dia de segunda a sexta, praça 123',
-      color: AppTheme.coral,
-      members: 15,
-      isJoined: true,
-      isOwner: false,
-    ),
-    Group(
-      id: '4',
-      name: 'Amigos de Cardio',
-      description: 'Todo dia de segunda a sexta, praça 123',
-      color: const Color(0xFF3B82F6),
-      members: 20,
-      isJoined: false,
-      isOwner: false,
-    ),
-    Group(
-      id: '5',
-      name: 'Yoga & Zen',
-      description: 'Meditação e yoga toda manhã',
-      color: AppTheme.teal,
-      members: 6,
-      isJoined: false,
-      isOwner: false,
-    ),
-  ];
+  List<Group> _groups = [];
 
   List<Group> get myGroups => _groups.where((g) => g.isJoined).toList();
   List<Group> get discoverGroups => _groups.where((g) => !g.isJoined).toList();
 
-  void joinGroup(String id) {
-    final g = _groups.firstWhere((g) => g.id == id);
-    g.isJoined = true;
-    g.members++;
+  Future<void> loadGroups(String uid) async {
+    final userRef = FirebaseFirestore.instance.collection('usuarios').doc(uid);
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('grupos')
+        .where('usuarios', arrayContains: userRef)
+        .get();
+
+    _groups = snapshot.docs.map((doc) {
+      final data = doc.data();
+      final adminRefs = (data['admin'] as List?)?.cast<DocumentReference>() ?? [];
+      final isOwner = adminRefs.any((ref) => ref.id == uid);
+
+      final colorValue = data['cor'] as int?;
+      final color = colorValue != null ? Color(colorValue) : const Color(0xFF8B5CF6);
+
+      return Group(
+        id: doc.id,
+        name: data['nome'] as String? ?? '',
+        description: data['descricao'] as String? ?? '',
+        color: color,
+        members: (data['usuarios'] as List?)?.length ?? 1,
+        isJoined: true,
+        isOwner: isOwner,
+      );
+    }).toList();
+
     notifyListeners();
   }
 
-  void leaveGroup(String id) {
-    final g = _groups.firstWhere((g) => g.id == id);
-    g.isJoined = false;
-    if (g.members > 0) g.members--;
-    notifyListeners();
+  Future<Map<String, dynamic>?> getGroupData(String groupId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('grupos')
+          .doc(groupId)
+          .get();
+      return doc.data();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> createGroup({
     required String name,
     required String description,
     required Color color,
-    required String userEmail,
+    required String userUid,
+    List<String> memberUids = const [],
+    List<String> adminUids = const [],
   }) async {
-    final groupId = DateTime.now().millisecondsSinceEpoch.toString();
+    final groupRef = FirebaseFirestore.instance.collection('grupos').doc();
 
-    await FirebaseFirestore.instance.collection('groups').doc(groupId).set({
+    final userRef = FirebaseFirestore.instance.collection('usuarios').doc(userUid);
+    final memberRefs = [userRef, ...memberUids.map((uid) => FirebaseFirestore.instance.collection('usuarios').doc(uid))];
+    final adminRefs = [userRef, ...adminUids.map((uid) => FirebaseFirestore.instance.collection('usuarios').doc(uid))];
+
+    await groupRef.set({
       'nome': name,
-      'descrricao': description,
-      'usuarios': [userEmail],
-      'admin': [userEmail],
+      'descricao': description,
+      'cor': color.toARGB32(),
+      'usuarios': memberRefs,
+      'admin': adminRefs,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    _groups.add(Group(
-      id: groupId,
+    await FirebaseFirestore.instance.collection('usuarios').doc(userUid).update({
+      'listaGrupos': FieldValue.arrayUnion([groupRef]),
+    });
+
+    _groups.insert(0, Group(
+      id: groupRef.id,
       name: name,
       description: description,
       color: color,
-      members: 1,
+      members: memberRefs.length,
       isJoined: true,
       isOwner: true,
     ));
@@ -129,29 +110,83 @@ class GroupState extends ChangeNotifier {
     String? name,
     String? description,
     Color? color,
-    required String userEmail,
+    List<String> memberUids = const [],
+    List<String> adminUids = const [],
   }) async {
-    final g = _groups.firstWhere((g) => g.id == id);
+    final gIndex = _groups.indexWhere((g) => g.id == id);
+    if (gIndex == -1) return;
 
+    final g = _groups[gIndex];
     final updatedName = name ?? g.name;
     final updatedDescription = description ?? g.description;
     final updatedColor = color ?? g.color;
 
-    await FirebaseFirestore.instance.collection('groupos').doc(id).set({
+    final memberRefs = memberUids.map((uid) => FirebaseFirestore.instance.collection('usuarios').doc(uid)).toList();
+    final adminRefs = adminUids.map((uid) => FirebaseFirestore.instance.collection('usuarios').doc(uid)).toList();
+
+    await FirebaseFirestore.instance.collection('grupos').doc(id).set({
       'nome': updatedName,
-      'descrricao': updatedDescription,
-      'usuarios': [userEmail],
-      'admin': [userEmail],
+      'descricao': updatedDescription,
+      'cor': updatedColor.toARGB32(),
+      'usuarios': memberRefs,
+      'admin': adminRefs,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     g.name = updatedName;
     g.description = updatedDescription;
     g.color = updatedColor;
+    g.members = memberRefs.length;
     notifyListeners();
   }
 
-  void deleteGroup(String id) {
+  Future<void> joinGroup(String id, String userUid) async {
+    final userRef = FirebaseFirestore.instance.collection('usuarios').doc(userUid);
+    final groupRef = FirebaseFirestore.instance.collection('grupos').doc(id);
+
+    await groupRef.update({
+      'usuarios': FieldValue.arrayUnion([userRef]),
+    });
+
+    await FirebaseFirestore.instance.collection('usuarios').doc(userUid).update({
+      'listaGrupos': FieldValue.arrayUnion([groupRef]),
+    });
+
+    final g = _groups.firstWhere((g) => g.id == id);
+    g.isJoined = true;
+    g.members++;
+    notifyListeners();
+  }
+
+  Future<void> leaveGroup(String id, String userUid) async {
+    final userRef = FirebaseFirestore.instance.collection('usuarios').doc(userUid);
+    final groupRef = FirebaseFirestore.instance.collection('grupos').doc(id);
+
+    await groupRef.update({
+      'usuarios': FieldValue.arrayRemove([userRef]),
+      'admin': FieldValue.arrayRemove([userRef]),
+    });
+
+    await FirebaseFirestore.instance.collection('usuarios').doc(userUid).update({
+      'listaGrupos': FieldValue.arrayRemove([groupRef]),
+    });
+
+    final g = _groups.firstWhere((g) => g.id == id);
+    g.isJoined = false;
+    if (g.members > 0) g.members--;
+    notifyListeners();
+  }
+
+  Future<void> deleteGroup(String id) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final groupRef = FirebaseFirestore.instance.collection('grupos').doc(id);
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).update({
+        'listaGrupos': FieldValue.arrayRemove([groupRef]),
+      });
+    }
+
+    await FirebaseFirestore.instance.collection('grupos').doc(id).delete();
     _groups.removeWhere((g) => g.id == id);
     notifyListeners();
   }

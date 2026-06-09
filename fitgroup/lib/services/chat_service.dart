@@ -56,6 +56,7 @@ class ChatService {
         .add({
       'senderUid': user.uid,
       'senderName': senderName,
+      'criado_por': user.email ?? '',
       'text': text.trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });

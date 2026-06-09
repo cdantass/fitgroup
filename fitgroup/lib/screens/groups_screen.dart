@@ -25,18 +25,17 @@ class _GroupsScreenState extends State<GroupsScreen> {
     _loadGroups();
   }
 
-  Future<void> _loadGroups() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      await GroupState.instance.loadGroups(uid);
-    }
-  }
-
   @override
   void dispose() {
     GroupState.instance.removeListener(_rebuild);
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await GroupState.instance.loadGroups(uid);
   }
 
   void _rebuild() => setState(() {});
@@ -61,7 +60,11 @@ class _GroupsScreenState extends State<GroupsScreen> {
             _buildSearchBar(),
             _buildTabs(),
             Expanded(
-              child: _displayedGroups.isEmpty ? _buildEmpty() : _buildList(),
+              child: GroupState.instance.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _displayedGroups.isEmpty
+                      ? _buildEmpty()
+                      : _buildList(),
             ),
           ],
         ),
@@ -222,11 +225,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 foregroundColor: Colors.white),
             onPressed: () async {
               final uid = FirebaseAuth.instance.currentUser?.uid;
-              if (uid != null) {
-                await GroupState.instance.joinGroup(group.id, uid);
-              }
+              if (uid != null) await GroupState.instance.joinGroup(group.id, uid);
               Navigator.pop(ctx);
-              if (context.mounted) {
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Você entrou em ${group.name}!')));
               }
@@ -255,10 +256,8 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
               final uid = FirebaseAuth.instance.currentUser?.uid;
-              if (uid != null) {
-                await GroupState.instance.leaveGroup(group.id, uid);
-              }
-              Navigator.pop(context);
+              if (uid != null) await GroupState.instance.leaveGroup(group.id, uid);
+              Navigator.pop(ctx);
             },
             child: const Text('Sair'),
           ),

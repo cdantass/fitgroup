@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'state/group_state.dart';
 import 'models/group.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
@@ -76,6 +78,13 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await GroupState.instance.loadGroups(uid);
   }
 
   void _switchTab(int index) {

@@ -4,10 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class UserService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Sincroniza o usuário autenticado com a collection `usuarios`.
-  ///
-  /// - Se não existir, cria o documento com `listaGrupos` e `listaRotinas` vazios.
-  /// - Se existir, atualiza apenas `nome`, `email`, `fotoUrl` e `updatedAt`.
+
   Future<void> syncUserToFirestore(User user, String provider) async {
     if (user.uid.isEmpty) return;
     final docRef = _db.collection('usuarios').doc(user.uid);
@@ -29,6 +26,7 @@ class UserService {
           ...updateData,
           'listaGrupos': <dynamic>[],
           'listaRotinas': <dynamic>[],
+          'criado_por': user.email ?? '',
           'createdAt': Timestamp.now(),
         };
         await docRef.set(createData);

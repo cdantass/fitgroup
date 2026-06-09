@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
 import 'groups_screen.dart';
 import '../theme/app_theme.dart';
+import '../state/group_state.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -12,6 +14,18 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await GroupState.instance.loadGroups(uid);
+  }
 
   final _pages = const [
     HomeScreen(),

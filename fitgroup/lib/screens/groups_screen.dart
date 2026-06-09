@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
 import '../theme/app_theme.dart';
-// import 'create_group_screen.dart';
 import 'group_chat_screen.dart';
 import 'group_editor_screen.dart';
 
@@ -22,6 +22,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   void initState() {
     super.initState();
     GroupState.instance.addListener(_rebuild);
+    _loadGroups();
   }
 
   @override
@@ -29,6 +30,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
     GroupState.instance.removeListener(_rebuild);
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await GroupState.instance.loadGroups(uid);
   }
 
   void _rebuild() => setState(() {});
@@ -53,7 +60,11 @@ class _GroupsScreenState extends State<GroupsScreen> {
             _buildSearchBar(),
             _buildTabs(),
             Expanded(
-              child: _displayedGroups.isEmpty ? _buildEmpty() : _buildList(),
+              child: GroupState.instance.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _displayedGroups.isEmpty
+                      ? _buildEmpty()
+                      : _buildList(),
             ),
           ],
         ),
@@ -212,11 +223,14 @@ class _GroupsScreenState extends State<GroupsScreen> {
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryDark,
                 foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.joinGroup(group.id);
+            onPressed: () async {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid != null) await GroupState.instance.joinGroup(group.id, uid);
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Você entrou em ${group.name}!')));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Você entrou em ${group.name}!')));
+              }
             },
             child: const Text('Entrar'),
           ),
@@ -240,8 +254,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.leaveGroup(group.id);
+            onPressed: () async {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid != null) await GroupState.instance.leaveGroup(group.id, uid);
               Navigator.pop(ctx);
             },
             child: const Text('Sair'),
@@ -267,9 +282,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () {
-              GroupState.instance.deleteGroup(group.id);
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await GroupState.instance.deleteGroup(group.id);
+              Navigator.pop(context);
             },
             child: const Text('Excluir'),
           ),

@@ -26,6 +26,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     GroupState.instance.addListener(_rebuild);
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await GroupState.instance.loadGroups(uid);
+    }
   }
 
   @override

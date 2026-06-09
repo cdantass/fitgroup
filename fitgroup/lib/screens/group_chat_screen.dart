@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/group.dart';
 import '../models/chat_message.dart';
-import '../state/group_state.dart';
+import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
-// import 'create_group_screen.dart';
 import 'group_editor_screen.dart';
 
 class GroupChatScreen extends StatefulWidget {
@@ -19,52 +19,34 @@ class GroupChatScreen extends StatefulWidget {
 class _GroupChatScreenState extends State<GroupChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
-
-  List<ChatMessage> get _messages =>
-      GroupState.instance.getMessages(widget.group.id);
-
-  @override
-  void initState() {
-    super.initState();
-    GroupState.instance.addListener(_rebuild);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-  }
+  final _currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void dispose() {
-    GroupState.instance.removeListener(_rebuild);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _rebuild() => setState(() {});
-
   void _scrollToBottom() {
-    if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _sendMessage() {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    GroupState.instance.addMessage(
-      widget.group.id,
-      ChatMessage(
-        author: 'Você',
-        text: text,
-        isMe: true,
-        time: DateTime.now(),
-      ),
-    );
+    ChatService.instance.sendMessage(widget.group.id, text);
     _messageController.clear();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    _scrollToBottom();
   }
 
   @override
@@ -76,16 +58,62 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           children: [
             _buildHeader(context),
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 18),
-                    child: _ChatBubble(message: message),
+              child: StreamBuilder<List<ChatMessage>>(
+                stream: ChatService.instance.streamMessages(widget.group.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppTheme.purple),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Erro ao carregar mensagens',
+                          style: TextStyle(color: Colors.grey.shade400)),
+                    );
+                  }
+
+                  final messages = snapshot.data ?? [];
+
+                  if (messages.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text('Nenhuma mensagem ainda',
+                              style: TextStyle(color: Colors.grey.shade400)),
+                        ],
+                      ),
+                    );
+                  }
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 100),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  });
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMe = message.senderUid == _currentUid;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: _ChatBubble(message: message, isMe: isMe),
+                      );
+                    },
                   );
                 },
               ),
@@ -235,27 +263,28 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final bool isMe;
 
-  const _ChatBubble({required this.message});
+  const _ChatBubble({required this.message, required this.isMe});
 
   @override
   Widget build(BuildContext context) {
     final bubbleColor =
-        message.isMe ? AppTheme.purple : const Color(0xFFE8ECF4);
+        isMe ? AppTheme.purple : const Color(0xFFE8ECF4);
     final textColor =
-        message.isMe ? Colors.white : const Color(0xFF17212B);
+        isMe ? Colors.white : const Color(0xFF17212B);
 
     return Column(
-      crossAxisAlignment: message.isMe
+      crossAxisAlignment: isMe
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.only(
-              left: message.isMe ? 64 : 2,
-              right: message.isMe ? 2 : 64),
+              left: isMe ? 64 : 2,
+              right: isMe ? 2 : 64),
           child: Text(
-            message.author,
+            message.senderName,
             style: TextStyle(
               color: const Color(0xFF171717).withValues(alpha: 0.95),
               fontSize: 10,
@@ -265,7 +294,7 @@ class _ChatBubble extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Align(
-          alignment: message.isMe
+          alignment: isMe
               ? Alignment.centerRight
               : Alignment.centerLeft,
           child: Container(
@@ -276,12 +305,12 @@ class _ChatBubble extends StatelessWidget {
                 topLeft: const Radius.circular(14),
                 topRight: const Radius.circular(14),
                 bottomLeft:
-                    Radius.circular(message.isMe ? 14 : 4),
+                    Radius.circular(isMe ? 14 : 4),
                 bottomRight:
-                    Radius.circular(message.isMe ? 4 : 14),
+                    Radius.circular(isMe ? 4 : 14),
               ),
               border: Border.all(
-                color: message.isMe
+                color: isMe
                     ? const Color(0xFF5D42B8)
                     : const Color(0xFFD0D7E5),
                 width: 1,

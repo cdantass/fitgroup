@@ -1,13 +1,15 @@
 class ChatMessage {
-  final String author;
+  final String? id;
+  final String senderUid;
+  final String senderName;
   final String text;
-  final bool isMe;
-  final DateTime time;
+  final DateTime? createdAt;
 
   const ChatMessage({
-    required this.author,
+    this.id,
+    required this.senderUid,
+    required this.senderName,
     required this.text,
-    required this.isMe,
-    required this.time,
+    this.createdAt,
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -15,6 +16,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passCtrl = TextEditingController();
   final _passConfirmCtrl = TextEditingController();
   bool _isLoading = false;
+
+  Future<void> _register() async {
+    final name = _nameCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+    final confirm = _passConfirmCtrl.text;
+
+    if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Preencha todos os campos')));
+      return;
+    }
+
+    if (!email.endsWith('@souunit.com.br')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use seu email institucional @souunit.com.br')),
+      );
+      return;
+    }
+
+    if (password != confirm) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('As senhas não coincidem')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(cred.user!.uid)
+          .set({
+        'uid': cred.user!.uid,
+        'email': email,
+        'nome': name,
+        'fotoUrl': '',
+        'listaGrupos': [],
+        'listaRotinas': [],
+        'provider': 'email',
+        'criado_por': email,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Conta criada com sucesso')));
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final message = switch (e.code) {
+        'weak-password' => 'Senha muito fraca.',
+        'email-already-in-use' => 'Email já em uso.',
+        'invalid-email' => 'Email inválido.',
+        _ => e.message ?? 'Erro ao criar conta.',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Erro: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -82,66 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
-                        onPressed: _isLoading
-                            ? null
-                            : () async {
-                                final name = _nameCtrl.text.trim();
-                                final email = _emailCtrl.text.trim();
-                                final password = _passCtrl.text;
-                                final confirm = _passConfirmCtrl.text;
-
-                                if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Preencha todos os campos')),
-                                  );
-                                  return;
-                                }
-
-                                if (!email.endsWith('@souunit.com.br')) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Use seu email institucional @souunit.com.br'),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                if (password != confirm) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('As senhas não coincidem')),
-                                  );
-                                  return;
-                                }
-
-                                setState(() => _isLoading = true);
-                                try {
-                                  await FirebaseAuth.instance.createUserWithEmailAndPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Conta criada com sucesso')),
-                                  );
-                                  Navigator.pop(context);
-                                } on FirebaseAuthException catch (e) {
-                                  String message;
-                                  if (e.code == 'weak-password') {
-                                    message = 'Senha muito fraca.';
-                                  } else if (e.code == 'email-already-in-use') {
-                                    message = 'Email já em uso.';
-                                  } else if (e.code == 'invalid-email') {
-                                    message = 'Email inválido.';
-                                  } else {
-                                    message = e.message ?? 'Erro ao criar conta.';
-                                  }
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
-                                } finally {
-                                  if (mounted) setState(() => _isLoading = false);
-                                }
-                              },
+                        onPressed: _isLoading ? null : _register,
                         child: _isLoading
                             ? const SizedBox(
                                 height: 16,

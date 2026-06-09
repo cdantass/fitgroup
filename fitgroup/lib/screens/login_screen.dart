@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../theme/app_theme.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import '../services/user_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,6 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      try {
+        final user = userCredential.user;
+        if (user != null) {
+          await UserService().syncUserToFirestore(user, 'google');
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao sincronizar usuário: $e')));
+      }
+
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
@@ -104,6 +114,15 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
+
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await UserService().syncUserToFirestore(user, 'email');
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao sincronizar usuário: $e')));
+      }
 
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);

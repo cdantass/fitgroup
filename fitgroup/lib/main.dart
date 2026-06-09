@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'state/group_state.dart';
 import 'models/group.dart';
+import 'state/group_state.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -14,6 +15,7 @@ import 'screens/criar_screen.dart';
 import 'screens/groups_screen.dart';
 import 'screens/group_chat_screen.dart';
 import 'screens/profile_screen.dart';
+import 'widgets/auth_guard.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -43,11 +45,11 @@ class FitGroupApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
-        '/home': (_) => const MainShell(initialIndex: 0),
-        '/rotinas': (_) => const MainShell(initialIndex: 1),
-        '/groups': (_) => const MainShell(initialIndex: 2),
-        '/profile': (_) => const ProfileScreen(),
-        '/criar': (_) => const CriarScreen(),
+        '/home': (_) => const AuthGuard(child: MainShell(initialIndex: 0)),
+        '/rotinas': (_) => const AuthGuard(child: MainShell(initialIndex: 1)),
+        '/groups': (_) => const AuthGuard(child: MainShell(initialIndex: 2)),
+        '/profile': (_) => const AuthGuard(child: ProfileScreen()),
+        '/criar': (_) => const AuthGuard(child: CriarScreen()),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/group-chat') {
@@ -56,7 +58,7 @@ class FitGroupApp extends StatelessWidget {
             builder: (_) => GroupChatScreen(group: group),
           );
         }
-        return null;
+        return null;  
       },
     );
   }

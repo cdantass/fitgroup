@@ -2,21 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group.dart';
-import '../models/chat_message.dart';
-
 class GroupState extends ChangeNotifier {
   static final GroupState instance = GroupState._();
   GroupState._();
-
-  final Map<String, List<ChatMessage>> _chats = {};
-
-  List<ChatMessage> getMessages(String groupId) => _chats[groupId] ?? [];
-
-  void addMessage(String groupId, ChatMessage message) {
-    _chats.putIfAbsent(groupId, () => []);
-    _chats[groupId]!.add(message);
-    notifyListeners();
-  }
 
   List<Group> _groups = [];
 

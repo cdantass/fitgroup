@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _sendResetEmail() async {
-    if (_emailCtrl.text.isEmpty) {
+    final email = _emailCtrl.text;
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor, insira seu email')),
       );
@@ -29,12 +31,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: email.trim(),
+      );
 
-    setState(() {
-      _isLoading = false;
-      _emailSent = true;
-    });
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _emailSent = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enviamos um link de recuperação para seu e-mail.'),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+
+      String message = 'Ocorreu um erro. Tente novamente.';
+      if (e.code == 'invalid-email') {
+        message = 'Email inválido.';
+      } else if (e.code == 'user-not-found') {
+        message = 'Nenhum usuário encontrado com este email.';
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: ${e.toString()}')),
+      );
+    }
   }
 
   void _resetForm() {
@@ -91,7 +125,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Digite seu email para receber instruções de recuperação de senha',
+          'Digite seu email para receber as instruções de recuperação de senha.',
           style: TextStyle(
             color: Colors.black54,
             fontSize: 14,
@@ -131,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Text('ENVIAR EMAIL'),
+                : const Text('ENVIAR LINK DE RECUPERAÇÃO'),
           ),
         ),
         const Spacer(),

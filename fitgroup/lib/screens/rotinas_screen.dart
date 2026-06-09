@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/app_data.dart';
@@ -148,8 +149,8 @@ class _RotinasScreenState extends State<RotinasScreen> {
         ? FirebaseFirestore.instance.collection('rotinas')
         : FirebaseFirestore.instance
             .collection('rotinas')
-            .where('autorId', isEqualTo: 'teste123');
-
+            .where('autorId', isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '');
+            
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (context, snapshot) {

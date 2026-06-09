@@ -8,7 +8,7 @@
 | Alunos | Atribuições |
 | :--- | :--- |
 | **Cauã Dantas Barbosa** | • Tela de "Home" <br> • Tela de "Editar" |
-| **João Enzo Vieira da Penha** | • Tela de "Welcome" <br> • Telas de "Login e Registro"|
+| **João Enzo Vieira da Penha** | • Tela de "Welcome" <br> • Telas de "Login, Registro, Recuperação"| • https://youtu.be/7BOqrL08cZE |
 
 ---
 

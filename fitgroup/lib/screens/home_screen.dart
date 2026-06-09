@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/app_data.dart';
 import '../models/group.dart';
 import '../state/group_state.dart';
@@ -21,6 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     GroupState.instance.addListener(_rebuild);
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await GroupState.instance.loadGroups(uid);
+    }
   }
 
   @override

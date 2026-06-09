@@ -145,11 +145,21 @@ class _RotinasScreenState extends State<RotinasScreen> {
   }
 
   Widget _buildRotinasList(bool isDescobrir) {
-    final query = isDescobrir
-        ? FirebaseFirestore.instance.collection('rotinas')
-        : FirebaseFirestore.instance
-            .collection('rotinas')
-            .where('autorId', isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '');
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user == null) {
+      return const Center(child: Text('Faça login para ver suas rotinas.'));
+    }
+
+    late Query query;
+    
+    if (isDescobrir) {
+      query = FirebaseFirestore.instance.collection('rotinas');
+    } else {
+      query = FirebaseFirestore.instance
+          .collection('rotinas')
+          .where('autorId', isEqualTo: user.uid);
+    }
             
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
@@ -158,7 +168,13 @@ class _RotinasScreenState extends State<RotinasScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('Nenhuma rotina encontrada.'));
+          return Center(
+            child: Text(
+              isDescobrir 
+                ? 'Nenhuma rotina para descobrir.' 
+                : 'Você ainda não criou nenhuma rotina.',
+            ),
+          );
         }
 
         final docs = snapshot.data!.docs;
@@ -172,14 +188,15 @@ class _RotinasScreenState extends State<RotinasScreen> {
 
             final rotina = Workout(
               title: data['nome'] ?? '',
-              subtitle: data['categoria'] ?? '',
-              estimatedMinutes: data['estimatedMinutes'] ?? 0,
+              subtitle: data['tipo'] ?? data['categoria'] ?? '',
+              estimatedMinutes: data['duracao'] ?? data['estimatedMinutes'] ?? 45,
               exercises: (data['exercicios'] as List<dynamic>? ?? [])
                   .map((e) => Exercise(
                         name: e['nome'] ?? '',
                         series: e['series'] ?? 3,
-                        reps: e['reps'] ?? 10,
+                        reps: e['repeticoes'] ?? e['reps'] ?? 10,
                         weight: (e['peso'] ?? 0).toDouble(),
+                        hasWeight: e['temPeso'] ?? ((e['peso'] ?? 0) > 0),
                       ))
                   .toList(),
             );
@@ -192,7 +209,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                 ),
               ),
               child: _RotinaCard(
-                categoria: data['categoria'] ?? '',
+                categoria: data['tipo'] ?? data['categoria'] ?? '',
                 nome: data['nome'] ?? '',
                 autor: 'por ${data['autorNome'] ?? ''}',
                 onEdit: () => _editRotina(id, data),
@@ -207,7 +224,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
 
   Future<void> _editRotina(String id, Map<String, dynamic> data) async {
     final titleController = TextEditingController(text: data['nome']);
-    final subtitleController = TextEditingController(text: data['categoria']);
+    final subtitleController = TextEditingController(text: data['tipo'] ?? data['categoria']);
     final formKey = GlobalKey<FormState>();
 
     await showDialog<void>(
@@ -229,7 +246,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: subtitleController,
-                  decoration: const InputDecoration(labelText: 'Categoria'),
+                  decoration: const InputDecoration(labelText: 'Tipo/Categoria'),
                 ),
               ],
             ),
@@ -247,7 +264,7 @@ class _RotinasScreenState extends State<RotinasScreen> {
                       .doc(id)
                       .update({
                     'nome': titleController.text.trim(),
-                    'categoria': subtitleController.text.trim(),
+                    'tipo': subtitleController.text.trim(),
                   });
                   if (context.mounted) Navigator.of(context).pop();
                 }
@@ -285,7 +302,20 @@ class _RotinasScreenState extends State<RotinasScreen> {
     );
 
     if (confirmed == true) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Remover a rotina da lista do usuário
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user.uid)
+            .update({
+          'listaRotinas': FieldValue.arrayRemove([id]),
+        });
+      }
+
+      // Excluir a rotina
       await FirebaseFirestore.instance.collection('rotinas').doc(id).delete();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Rotina "$nome" excluída.')),

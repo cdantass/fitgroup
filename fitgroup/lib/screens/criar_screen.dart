@@ -41,8 +41,10 @@ class _CriarScreenState extends State<CriarScreen> {
         _exercicios.add({
           'nome': texto,
           'series': int.tryParse(_seriesController.text) ?? 3,
-          'reps': int.tryParse(_repsController.text) ?? 10,
+          'repeticoes': int.tryParse(_repsController.text) ?? 10,
           'peso': double.tryParse(_pesoController.text) ?? 0,
+          'temPeso': (double.tryParse(_pesoController.text) ?? 0) > 0,
+          'completo': false,
         });
         _exercicioController.clear();
         _seriesController.text = '3';
@@ -55,19 +57,42 @@ class _CriarScreenState extends State<CriarScreen> {
   Future<void> _salvar() async {
   if (_formKey.currentState?.validate() ?? false) {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    await FirebaseFirestore.instance.collection('rotinas').add({
-      'nome': _nomeController.text.trim(),
-      'categoria': _categoriaController.text.trim(),
-      'descricao': _descricaoController.text.trim(),
-      'exercicios': _exercicios,
-      'autorNome': user?.displayName ?? user?.email ?? 'Usuário',
-      'autorId': user?.uid ?? '',
-    });
+    try {
+      // Criar a rotina na collection
+      final docRef = await FirebaseFirestore.instance.collection('rotinas').add({
+        'nome': _nomeController.text.trim(),
+        'tipo': _categoriaController.text.trim(),
+        'descricao': _descricaoController.text.trim(),
+        'exercicios': _exercicios,
+        'duracao': _calculateDuracao(),
+        'autorNome': user.displayName ?? user.email ?? 'Usuário',
+        'autorId': user.uid,
+        'criadoEm': DateTime.now(),
+      });
 
-    if (mounted) Navigator.pop(context);
+      // Adicionar o ID da rotina à lista do usuário
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).update({
+        'listaRotinas': FieldValue.arrayUnion([docRef.id]),
+      });
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar: $e')),
+        );
+      }
+    }
   }
 }
+
+  int _calculateDuracao() {
+    if (_exercicios.isEmpty) return 45;
+    // Aproximadamente 3 minutos por exercício
+    return (_exercicios.length * 3);
+  }
   void _cancelar() {
     Navigator.pop(context);
   }

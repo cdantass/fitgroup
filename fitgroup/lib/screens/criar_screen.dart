@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'rotinas_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -52,20 +53,21 @@ class _CriarScreenState extends State<CriarScreen> {
   }
 
   Future<void> _salvar() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      await FirebaseFirestore.instance.collection('rotinas').add({
-        'nome': _nomeController.text.trim(),
-        'categoria': _categoriaController.text.trim(),
-        'descricao': _descricaoController.text.trim(),
-        'exercicios': _exercicios,
-        'autorNome': 'João',
-        'autorId': 'teste123',
-      });
+  if (_formKey.currentState?.validate() ?? false) {
+    final user = FirebaseAuth.instance.currentUser;
 
-      if (mounted) Navigator.pop(context);
-    }
+    await FirebaseFirestore.instance.collection('rotinas').add({
+      'nome': _nomeController.text.trim(),
+      'categoria': _categoriaController.text.trim(),
+      'descricao': _descricaoController.text.trim(),
+      'exercicios': _exercicios,
+      'autorNome': user?.displayName ?? user?.email ?? 'Usuário',
+      'autorId': user?.uid ?? '',
+    });
+
+    if (mounted) Navigator.pop(context);
   }
-
+}
   void _cancelar() {
     Navigator.pop(context);
   }

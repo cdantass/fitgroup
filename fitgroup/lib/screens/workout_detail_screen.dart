@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_data.dart';
@@ -239,38 +237,16 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () async {
-  final user = FirebaseAuth.instance.currentUser;
-
-  await FirebaseFirestore.instance.collection('treinos_concluidos').add({
-    'usuarioId': user?.uid ?? '',
-    'usuarioNome': user?.displayName ?? user?.email ?? 'Usuário',
-    'treino': widget.workout.title,
-    'categoria': widget.workout.subtitle,
-    'duracaoMinutos': widget.workout.estimatedMinutes,
-    'totalExercicios': widget.workout.exercises.length,
-    'totalSeries': widget.workout.exercises.fold(0, (sum, e) => sum + e.series),
-    'exercicios': widget.workout.exercises.map((e) => {
-      'nome': e.name,
-      'series': e.series,
-      'reps': e.reps,
-      'peso': e.weight,
-      'concluido': e.completed,
-    }).toList(),
-    'concluidoEm': FieldValue.serverTimestamp(),
-  });
-
-  if (context.mounted) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CompletedWorkoutScreen(
-          workout: widget.workout,
-        ),
-      ),
-    );
-  }
-},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CompletedWorkoutScreen(
+                      workout: widget.workout,
+                    ),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 16, 185, 129),
                 foregroundColor: Colors.white,

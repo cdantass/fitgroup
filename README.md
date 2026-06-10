@@ -15,7 +15,7 @@
 
 ### Fluxo de Rotina
 | Alunos | Atribuições |Link do Vídeo de Defesa |
-| :--- | :--- |
+| :--- | :--- | :--- |
 | **Pedro Henrique do Nascimento Miranda** | • Tela de "Treinos" <br> • Tela dos "Treinos Concluídos" <br> • "Hotbar com treino, home e grupos" | https://drive.google.com/file/d/1LijAcjWLlCb4LNp-NYMmPDa1TMOXK7eA/view?usp=drive_link |
 | **José Alexsandro de França Menezes** | • Tela de "Suas rotinas" <br> • Telas de "Descobrir e Criar rotinas" | https://youtu.be/w3Wp2_KXy5M   |
 
@@ -31,6 +31,6 @@
 
 ### Parte 3
 | Nome do Aluno | Telas sob sua responsabilidade | Link do Vídeo de Defesa |
-| :--- | :--- |
+| :--- | :--- | :--- |
 | **Cauã Dantas Barbosa** | • Tela de "Home" <br> • Tela de "Meu Perfil" <br> • Tela de "Ajuda e Suporte" | • https://drive.google.com/file/d/1RLPxUpDKl39g-V8ftN52nQQtT0JdpQGh/view?usp=sharing |
 | **João Enzo Vieira da Penha** | • Tela de "Welcome" <br> • Telas de "Login, Registro, Recuperação"| • https://youtu.be/7BOqrL08cZE |

@@ -21,9 +21,9 @@
 ---
 
 ###  Fluxo de Chat
-| Alunos | Atribuições |
-| :--- | :--- |
-| **Thiago Buarque de Melo Andrade** | • Tela de "Criação de grupos" <br> • Tela do "Chat de grupos" |
+| Alunos | Atribuições | Lind do video de Defesa|
+| :--- | :--- | :--- |
+| **Thiago Buarque de Melo Andrade** | • Tela de "Criação de grupos" <br> • Tela do "Chat de grupos" | https://www.youtube.com/watch?v=W62pZjUq8Cs |
 | **Saulo Marcel Leite Carvalho** | • Tela de "Seus Grupos" <br> • Tela de "Descobrir Grupos" |
 
 ---

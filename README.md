@@ -4,11 +4,12 @@
 ## Equipe e Responsabilidades
 
 
-###  Fluxo de Login
-| Alunos | Atribuições
-| :--- | :--- |
-| **Cauã Dantas Barbosa** |  • Tela de "Home" <br> • Tela de "Meu Perfil" <br> • Tela de "Ajuda e Suporte" |
-| **João Enzo Vieira da Penha** | • Tela de "Welcome" <br> • Telas de "Login, Registro, Recuperação"| • https://youtu.be/7BOqrL08cZE |
+## Fluxo de Login
+
+| Nome do Aluno | Telas sob sua responsabilidade | Link do Vídeo de Defesa |
+| :--- | :--- | :--- |
+| **Cauã Dantas Barbosa** | • Tela de "Home" <br> • Tela de "Meu Perfil" <br> • Tela de "Ajuda e Suporte" | [https://drive.google.com/file/d/1RLPxUpDKl39g-V8ftN52nQQtT0JdpQGh/view?usp=sharing](https://drive.google.com/file/d/1RLPxUpDKl39g-V8ftN52nQQtT0JdpQGh/view?usp=sharing) |
+| **João Enzo Vieira da Penha** | • Tela de "Welcome" <br> • Telas de "Login, Registro, Recuperação" | [https://youtu.be/7BOqrL08cZE](https://youtu.be/7BOqrL08cZE) |
 
 ---
 
